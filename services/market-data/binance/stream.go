@@ -80,4 +80,48 @@ func StreamTickers(symbols []string, out chan<- TickerEvent) {
 // conects to websocket and stream data
 func connect(url string, out chan<- TickerEvent) error {
 
+	// open client-side websocket connection 
+	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+
+	// if connnection fails
+	if err != nil {
+		return fmt.Errorf("failed to dial websocket: %w", err)
+	}
+
+	// connection cleanup when connect() exits
+	defer conn.close()
+
+	log.Printf("connected to websocket: %s", url)
+
+	// connection done, now streaming data
+
+	for {
+		// we omit message_type here, always is JSON
+		_, message, err := conn.ReadMessage()
+
+		if err != nil {
+			return fmt.Errorf("failed to read message: %w", err)
+		}
+
+		// decode json
+		var envelope CombinedStream
+		err := json.Unmarshal(message, &envelope)	// pass by pointer, need to modify it
+
+		if err != nil {
+			log.Printf("failed to decode message: %s", err)
+			continue
+		}
+
+		// decode ticker in envelope
+		var ticker TickerEvent
+		err := json.Unmarshal(envelope.Data, &ticker)
+
+		if err != nil {
+			log.Printf("failed to decode ticker: %s", err)
+			continue 
+		}
+
+		// after decoding ticker, send to out channel
+		out <- ticker
+	}
 }
