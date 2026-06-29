@@ -115,11 +115,13 @@ func connect(url string, handler func(json.RawMessage)) error {
 	if err != nil {
 		return fmt.Errorf("failed to dial: %w", err)
 	}
+	// cleanup when connection exits
 	defer conn.Close()
 
 	log.Printf("connected to websocket: %s", url)
 
 	for {
+		// we omit message_type here, always is JSON
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			return fmt.Errorf("failed to read message: %w", err)
