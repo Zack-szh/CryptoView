@@ -9,21 +9,27 @@ import (
 func main() {
 	symbols := []string{"BTCUSDT"}
 
-	tickers := make(chan binance.TickerEvent)
-	bookTickers := make(chan binance.BookTickerEvent)
+	tickerCh := make(chan binance.TickerEvent)
+	bookTickerCh := make(chan binance.BookTickerEvent)
+	tradeCh := make(chan binance.TradeEvent)
 
-	binance.StreamTickers(symbols, tickers)
-	binance.StreamBookTickers(symbols, bookTickers)
+	binance.StreamTicker(symbols, tickerCh)
+	binance.StreamBookTicker(symbols, bookTickerCh)
+	binance.StreamTrade(symbols, tradeCh)
 
 	fmt.Println("streaming — press Ctrl+C to stop")
+
 	for {
 		select {
-		case e := <-tickers:
+		case event := <-tickerCh:
 			fmt.Printf("[ticker]     [%s]  last=%-14s  change=%s%%\n",
-				e.Symbol, e.LastPrice, e.PriceChangePct)
-		case e := <-bookTickers:
+				event.Symbol, event.LastPrice, event.PriceChangePct)
+		case event := <-bookTickerCh:
 			fmt.Printf("[bookTicker] [%s]  bid=%-14s  ask=%s\n",
-				e.Symbol, e.BidPrice, e.AskPrice)
+				event.Symbol, event.BidPrice, event.AskPrice)
+		case event := <-tradeCh:
+			fmt.Printf("[trade] [%s] price=%-14s quantity=%d\n",
+				event.Symbol, event.Price, event.Quantity)
 		}
 	}
 }

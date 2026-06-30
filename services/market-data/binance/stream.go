@@ -59,47 +59,55 @@ type BookTickerEvent struct {
 	AskQty   string `json:"A"`
 }
 
-func StreamTickers(symbols []string, out chan<- TickerEvent) {
-	url := buildURL(symbols, "@ticker")
+type TradeEvent struct {
+	EventType     string `json:"e"`
+	EventTime     int64  `json:"E"`
+	Symbol        string `json:"s"`
+	TradeID       int64  `json:"t"`
+	Price         string `json:"p"`
+	Quantity      string `json:"q"`
+	TradeTime     int64  `json:"T"`
+	IsMarketMaker bool   `json:"m"`
+	Ignore        bool   `json:"M"`
+}
+
+// instead of three stream functions and repetitive code
+// we can cover all streams using type parameters
+func Stream[T any](symbols []string, streamType string, out chan<- T) {
+	url := buildURL(symbols, streamType)
 	go func() {
 		for {
 			err := connect(url, func(data json.RawMessage) {
-				var ticker TickerEvent
-				if err := json.Unmarshal(data, &ticker); err != nil {
-					log.Printf("failed to decode ticker: %s", err)
+				var event T
+				if err := json.Unmarshal(data, &event); err != nil {
+					// if fails to decode json object
+					log.Printf("failed to decode json: %s", err)
 					return
 				}
-				out <- ticker
+				out <- event
 			})
+			// if fails to connect to websocket
 			if err != nil {
-				log.Printf("websocket error: %v — retrying in 5s", err)
+				log.Printf("websocket error: %v - retrying in 5s", err)
 				time.Sleep(5 * time.Second)
 			}
 		}
 	}()
 }
 
-func StreamBookTickers(symbols []string, out chan<- BookTickerEvent) {
-	url := buildURL(symbols, "@bookTicker")
-	go func() {
-		for {
-			err := connect(url, func(data json.RawMessage) {
-				var bookticker BookTickerEvent
-				if err := json.Unmarshal(data, &bookticker); err != nil {
-					log.Printf("failed to decode book ticker: %s", err)
-					return
-				}
-				out <- bookticker
-			})
-			if err != nil {
-				log.Printf("websocket error: %v — retrying in 5s", err)
-				time.Sleep(5 * time.Second)
-			}
-		}
-	}()
+func StreamTicker(symbols []string, out chan<- TickerEvent) {
+	Stream(symbols, "@ticker", out)
 }
 
-// streamType is either @bookTicker or @ticker
+func StreamBookTicker(symbols []string, out chan<- BookTickerEvent) {
+	Stream(symbols, "@bookTicker", out)
+}
+
+func StreamTrade(symbols []string, out chan<- TradeEvent) {
+	Stream(symbols, "@trade", out)
+}
+
+// streamType is either @ticker, @bookTicker, @trade
 func buildURL(symbols []string, streamType string) string {
 	endpoints := make([]string, len(symbols))
 	for i, s := range symbols {
