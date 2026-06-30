@@ -87,6 +87,10 @@ func Stream[T any](symbols []string, streamType string, out chan<- T) {
 				out <- event
 			})
 			// if fails to connect to websocket
+			// TODO: Currently this connection goroutine would retry forever, this is fine for now
+			// but later when we use docker we will need a better way of shutting it off
+			// will later integrate context into this function, so the connection goroutine
+			// would stop when ctx.Done fires.
 			if err != nil {
 				log.Printf("websocket error: %v - retrying in 5s", err)
 				time.Sleep(5 * time.Second)
