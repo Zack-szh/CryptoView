@@ -37,7 +37,7 @@ func (s *Store) Close() {
 
 func (s *Store) InsertTrade(ctx context.Context, trade binance.TradeEvent) error {
 	_, err := s.pool.Exec(ctx,
-		`INSERT INTO trades (time, ticker, price, quantity, is_maker, trade_id)
+		`INSERT INTO trades (time, symbol, price, quantity, is_maker, trade_id)
          VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT DO NOTHING`,
 		time.UnixMilli(trade.TradeTime),
@@ -49,6 +49,30 @@ func (s *Store) InsertTrade(ctx context.Context, trade binance.TradeEvent) error
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert trade: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) InsertTicker(ctx context.Context, ticker binance.TickerEvent) error {
+	_, err := s.pool.Exec(ctx,
+		`INSERT INTO tickers (time, symbol, last_price, open_price, 
+	 high, low, volume, quote_volume, weighted_avg_price, trade_count)
+	 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	 ON CONFLICT DO NOTHING`,
+		time.UnixMilli(ticker.EventTime),
+		ticker.Symbol,
+		ticker.LastPrice,
+		ticker.OpenPrice,
+		ticker.High,
+		ticker.Low,
+		ticker.Volume,
+		ticker.QuoteVolume,
+		ticker.WeightedAvgPrice,
+		ticker.TradeCount,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to insert ticker: %w", err)
 	}
 	return nil
 }

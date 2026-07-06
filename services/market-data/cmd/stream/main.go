@@ -48,6 +48,10 @@ func main() {
 		case event := <-tickerCh:
 			fmt.Printf("[ticker]     [%s]  last=%-14s  change=%s%%\n",
 				event.Symbol, event.LastPrice, event.PriceChangePct)
+			// insert ticker into db
+			if err := store.InsertTicker(ctx, event); err != nil {
+				log.Printf("failed to insert ticker: %v", err)
+			}
 		case event := <-bookTickerCh:
 			fmt.Printf("[bookTicker] [%s]  bid=%-14s  ask=%s\n",
 				event.Symbol, event.BidPrice, event.AskPrice)
