@@ -2,6 +2,7 @@ package binance
 
 // this package connects and reads data stream from binance websocket
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -73,11 +74,11 @@ type TradeEvent struct {
 
 // instead of three stream functions and repetitive code
 // we can cover all streams using type parameters
-func Stream[T any](symbols []string, streamType string, out chan<- T) {
+func Stream[T any](ctx context.Context, symbols []string, streamType string, out chan<- T) {
 	url := buildURL(symbols, streamType)
 	go func() {
 		for {
-			err := connect(url, func(data json.RawMessage) {
+			err := connect(ctx, url, func(data json.RawMessage) {
 				var event T
 				if err := json.Unmarshal(data, &event); err != nil {
 					// if fails to decode json object
@@ -86,11 +87,13 @@ func Stream[T any](symbols []string, streamType string, out chan<- T) {
 				}
 				out <- event
 			})
-			// if fails to connect to websocket
-			// TODO: Currently this connection goroutine would retry forever, this is fine for now
-			// but later when we use docker we will need a better way of shutting it off
-			// will later integrate context into this function, so the connection goroutine
-			// would stop when ctx.Done fires.
+
+			// shutdown on context
+			if ctx.Err() != nil {
+				// context canceled, stop retrying, return
+				return
+			}
+			// would only retry if we have not shutdown context
 			if err != nil {
 				log.Printf("websocket error: %v - retrying in 5s", err)
 				time.Sleep(5 * time.Second)
@@ -99,16 +102,16 @@ func Stream[T any](symbols []string, streamType string, out chan<- T) {
 	}()
 }
 
-func StreamTicker(symbols []string, out chan<- TickerEvent) {
-	Stream(symbols, "@ticker", out)
+func StreamTicker(ctx context.Context, symbols []string, out chan<- TickerEvent) {
+	Stream(ctx, symbols, "@ticker", out)
 }
 
-func StreamBookTicker(symbols []string, out chan<- BookTickerEvent) {
-	Stream(symbols, "@bookTicker", out)
+func StreamBookTicker(ctx context.Context, symbols []string, out chan<- BookTickerEvent) {
+	Stream(ctx, symbols, "@bookTicker", out)
 }
 
-func StreamTrade(symbols []string, out chan<- TradeEvent) {
-	Stream(symbols, "@trade", out)
+func StreamTrade(ctx context.Context, symbols []string, out chan<- TradeEvent) {
+	Stream(ctx, symbols, "@trade", out)
 }
 
 // streamType is either @ticker, @bookTicker, @trade
@@ -122,13 +125,34 @@ func buildURL(symbols []string, streamType string) string {
 
 // connects to websocket and calls handler for each message received
 // handler just takes care of the specific json format for different endpoints
-func connect(url string, handler func(json.RawMessage)) error {
+// connect accepts context, closes the connectioon when ctx fires
+func connect(ctx context.Context, url string, handler func(json.RawMessage)) error {
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to dial: %w", err)
 	}
-	// cleanup when connection exits
+	// auto cleanup when connect() returns
 	defer conn.Close()
+
+	// active shutdown on context.Done()
+	// this goroutine keeps listening on ctx for shutdown signals
+	// IMPORTANT: CAUTIOUS OF LEAKING GOROUTINE!!!
+	// this goroutine would be alive forever if a network failure occurs and connect returns
+	// therefore we need a way to shutdown this goroutine when its parent process connect() exits
+	done := make(chan struct{}) // empty signal channel
+	defer close(done)
+	go func() {
+		select {
+		// active shutdown on context
+		case <-ctx.Done():
+			conn.Close()
+		// shutdown due to error
+		// when connect() returns, defer close(done) is run
+		// when done channel is closed, this goroutine select case <- done: immediately
+		// therefore shutting down this goroutine
+		case <-done:
+		}
+	}()
 
 	log.Printf("connected to websocket: %s", url)
 
@@ -136,6 +160,14 @@ func connect(url string, handler func(json.RawMessage)) error {
 		// we omit message_type here, always is JSON
 		_, message, err := conn.ReadMessage()
 		if err != nil {
+			if ctx.Err() != nil {
+				// if ctx.Err() is not nil, that means we actively shut down the context
+				// therefore this is not a real error, simply return nil
+				// clean exit
+				return nil
+			}
+			// this is a real error
+			// happens when we have not shut down context and it still fails to read message
 			return fmt.Errorf("failed to read message: %w", err)
 		}
 

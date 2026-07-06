@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/joho/godotenv"
 	"github.com/szh/cryptoview/services/market-data/binance"
@@ -12,6 +14,10 @@ import (
 )
 
 func main() {
+	// build context for signal-aware exit
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	// first we connect to db, managed with context
 	err := godotenv.Load()
 	if err != nil {
@@ -23,7 +29,6 @@ func main() {
 		log.Fatalf("DATABASE_URL is not set")
 	}
 
-	ctx := context.Background()
 	store, err := db.New(ctx, dbURL)
 
 	if err != nil {
@@ -37,9 +42,9 @@ func main() {
 	bookTickerCh := make(chan binance.BookTickerEvent)
 	tradeCh := make(chan binance.TradeEvent)
 
-	binance.StreamTicker(symbols, tickerCh)
-	binance.StreamBookTicker(symbols, bookTickerCh)
-	binance.StreamTrade(symbols, tradeCh)
+	binance.StreamTicker(ctx, symbols, tickerCh)
+	binance.StreamBookTicker(ctx, symbols, bookTickerCh)
+	binance.StreamTrade(ctx, symbols, tradeCh)
 
 	fmt.Println("streaming — press Ctrl+C to stop")
 
@@ -62,6 +67,9 @@ func main() {
 			if err := store.InsertTrade(ctx, event); err != nil {
 				log.Printf("failed to insert trade: %v", err)
 			}
+		case <-ctx.Done():
+			log.Printf("shutting down on context...")
+			return
 		}
 	}
 }
