@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/joho/godotenv"
@@ -36,7 +37,7 @@ func main() {
 	}
 	defer store.Close()
 
-	symbols := []string{"BTCUSDT"}
+	symbols := strings.Split(os.Getenv("SYMBOLS"), ",")
 
 	tickerCh := make(chan binance.TickerEvent)
 	bookTickerCh := make(chan binance.BookTickerEvent)
