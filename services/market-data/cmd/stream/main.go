@@ -84,15 +84,18 @@ func main() {
 				// drain the channel even after we have called ctx.Done()
 				// however we stil need to pass context because pgx requires it
 				// so we just pass in "empty" context
+				// fmt.Printf("DEBUG: inserting into tickers")
 				if err := store.InsertTicker(context.Background(), event); err != nil {
 					log.Printf("failed to insert ticker: %v", err)
 				}
 			}
 		}()
+
 		go func() {
 			defer wg.Done()
 			for event := range tradeJobs {
 				// insert tradeEvent into db
+				// fmt.Printf("DEBUG: inserting into trades")
 				if err := store.InsertTrade(context.Background(), event); err != nil {
 					log.Printf("failed to insert trade: %v", err)
 				}
