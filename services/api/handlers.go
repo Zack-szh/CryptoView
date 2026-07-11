@@ -62,3 +62,23 @@ func (s *Server) getTrade(c *gin.Context) {
 	// return data
 	c.JSON(http.StatusOK, trades)
 }
+
+func (s *Server) getKline(c *gin.Context) {
+	symbol := c.Param("symbol")
+	interval := c.DefaultQuery("interval", "1m")
+	limitStr := c.Query("limit")
+	limit, _ := strconv.Atoi(limitStr)
+
+	if limit <= 0 {
+		limit = 100
+	}
+
+	klines, err := s.store.GetKline(c.Request.Context(), symbol, interval, limit)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, klines)
+}

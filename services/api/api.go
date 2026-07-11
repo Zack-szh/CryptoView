@@ -27,9 +27,11 @@ func (s *Server) registerRoutes() {
 	// -- symbols --
 	v1.GET("/symbols", s.getSymbol)
 	// -- tickers --
-	v1.GET("/tickers/:symbol", s.getTicker)
+	v1.GET("/ticker/:symbol", s.getTicker)
 	// -- trades --
 	v1.GET("/trade/:symbol", s.getTrade)
+	// -- klines --
+	v1.GET("/kline/:symbol", s.getKline)
 	// more endpoints: WORK IN PROGRESS
 }
 

@@ -44,10 +44,12 @@ func main() {
 	tickerCh := make(chan binance.TickerEvent)
 	bookTickerCh := make(chan binance.BookTickerEvent)
 	tradeCh := make(chan binance.TradeEvent)
+	klineCh := make(chan binance.KlineEvent)
 
 	binance.StreamTicker(ctx, symbols, tickerCh)
 	binance.StreamBookTicker(ctx, symbols, bookTickerCh)
 	binance.StreamTrade(ctx, symbols, tradeCh)
+	binance.StreamKline(ctx, symbols, "1m", klineCh)
 
 	fmt.Println("streaming — press Ctrl+C to stop")
 
@@ -66,6 +68,7 @@ func main() {
 
 	tickerJobs := make(chan binance.TickerEvent, 500)
 	tradeJobs := make(chan binance.TradeEvent, 500)
+	klineJobs := make(chan binance.KlineEvent, 500)
 
 	var wg sync.WaitGroup
 
@@ -73,8 +76,8 @@ func main() {
 	// currently every single job are being inserted one by one
 	// later we might implement batch insert on pgx.pool for better performance
 
-	for range 4 { // 4 workers for each channel, 8 workers launched in total
-		wg.Add(2) // add 2, one trade worker one ticker worker
+	for range 4 { // 4 workers for each channel, 12 workers launched in total
+		wg.Add(3) // add 3, trade, ticker, kline workers
 		go func() {
 			defer wg.Done()
 			for event := range tickerJobs {
@@ -101,6 +104,15 @@ func main() {
 				}
 			}
 		}()
+
+		go func() {
+			defer wg.Done()
+			for event := range klineJobs {
+				if err := store.InsertKline(context.Background(), event); err != nil {
+					log.Printf("failed to insert kline: %v", err)
+				}
+			}
+		}()
 	}
 
 	for {
@@ -117,11 +129,17 @@ func main() {
 				event.Symbol, event.Price, event.Quantity)
 			// insert trade into db
 			tradeJobs <- event
+		case event := <-klineCh: // OHLCV
+			fmt.Printf("[kline] [%s] o=%-12s h=%-12s l=%-12s c=%-12s v=%s\n",
+				event.Symbol, event.Kline.OpenPrice, event.Kline.High,
+				event.Kline.Low, event.Kline.ClosePrice, event.Kline.Volume)
+			klineJobs <- event
 		case <-ctx.Done():
 			log.Printf("shutting down on context...")
 			log.Printf("closing tickerJobs and tradeJobs channels...")
 			close(tickerJobs)
 			close(tradeJobs)
+			close(klineJobs)
 			// wait for workers to finish draining channels
 			wg.Wait()
 			return

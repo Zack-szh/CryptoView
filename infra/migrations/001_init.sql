@@ -20,4 +20,19 @@ CREATE TABLE IF NOT EXISTS tickers (
     weighted_avg_price  DECIMAL(20, 8)  NOT NULL,
     trade_count         BIGINT          NOT NULL,
     PRIMARY KEY(time, symbol)
-)    
+);
+
+CREATE TABLE IF NOT EXISTS klines (
+    open_time   TIMESTAMPTZ    NOT NULL,
+    close_time  TIMESTAMPTZ    NOT NULL,
+    symbol      TEXT           NOT NULL,
+    interval    TEXT           NOT NULL,
+    open        DECIMAL(20,8)  NOT NULL,
+    high        DECIMAL(20,8)  NOT NULL,
+    low         DECIMAL(20,8)  NOT NULL,
+    close       DECIMAL(20,8)  NOT NULL,
+    volume      DECIMAL(20,8)  NOT NULL,
+    trade_count BIGINT         NOT NULL,
+    is_closed   BOOLEAN        NOT NULL,
+    PRIMARY KEY (open_time, symbol, interval)
+);

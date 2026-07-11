@@ -28,6 +28,10 @@ func (s *Store) Close() {
 }
 
 // return types for QUERY
+// IMPORTANT!!!!!
+// THESE ARE RETURN TYPES FROM DATABASE QUERY
+// NOT RETURN TYPES FROM BINANACE WEBSOCKET
+// FOR WEBSOCKET RETURN TYPES LOOK IN binance/stream.go
 type Ticker struct {
 	Time             time.Time `json:"time"`
 	Symbol           string    `json:"symbol"`
@@ -50,6 +54,20 @@ type Trade struct {
 	TradeID  int64     `json:"trade_id"`
 }
 
+type Kline struct {
+	OpenTime   time.Time `json:"open_time"`
+	CloseTime  time.Time `json:"close_time"`
+	Symbol     string    `json:"symbol"`
+	Interval   string    `json:"interval"`
+	OpenPrice  float64   `json:"open"`
+	High       float64   `json:"high"`
+	Low        float64   `json:"low"`
+	ClosePrice float64   `json:"close"`
+	Volume     float64   `json:"volume"`
+	TradeCount int64     `json:"trade_count"`
+	IsClosed   bool      `json:"is_closed"`
+}
+
 func (s *Store) GetSymbol(ctx context.Context) ([]string, error) {
 	rows, err := s.pool.Query(ctx,
 		`SELECT DISTINCT symbol FROM tickers ORDER BY symbol`)
@@ -69,6 +87,7 @@ func (s *Store) GetSymbol(ctx context.Context) ([]string, error) {
 		}
 		symbols = append(symbols, symbol)
 	}
+
 	return symbols, nil
 }
 
@@ -122,5 +141,33 @@ func (s *Store) GetTrade(ctx context.Context, symbol string, limit int) ([]Trade
 
 		trades = append(trades, t)
 	}
+
 	return trades, nil
+}
+
+func (s *Store) GetKline(ctx context.Context, symbol string, interval string, limit int) ([]Kline, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT open_time, close_time, symbol, interval, open, high, low, close, volume, trade_count, is_closed
+		FROM klines WHERE symbol = $1 AND interval = $2 ORDER BY open_time ASC LIMIT $3`,
+		symbol, interval, limit)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query kline: %s: %v", symbol, err)
+	}
+
+	defer rows.Close()
+
+	klines := make([]Kline, 0)
+
+	for rows.Next() {
+		var k Kline
+		if err := rows.Scan(&k.OpenTime, &k.CloseTime, &k.Symbol, &k.Interval, &k.OpenPrice, &k.High,
+			&k.Low, &k.ClosePrice, &k.Volume, &k.TradeCount, &k.IsClosed); err != nil {
+			return nil, err
+		}
+
+		klines = append(klines, k)
+	}
+
+	return klines, nil
 }

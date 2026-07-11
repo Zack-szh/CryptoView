@@ -8,5 +8,8 @@ Useful commands:
 - launch interactive psql shell: 
     docker exec -it cryptoview-postgres-1 psql -U cryptoview -d cryptoview
 
-- launch streaming service: 
+- launch streaming service and add data to DB: 
     go run ./services/market-data/cmd/stream/main.go
+
+- launch api service and query data from DB: 
+    go run ./services/api/cmd/api/main.go

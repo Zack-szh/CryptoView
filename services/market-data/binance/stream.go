@@ -72,6 +72,29 @@ type TradeEvent struct {
 	Ignore        bool   `json:"M"`
 }
 
+type KlineData struct {
+	OpenTime     int64  `json:"t"`
+	CloseTime    int64  `json:"T"`
+	Symbol       string `json:"s"`
+	Interval     string `json:"i"`
+	FirstTradeID int64  `json:"f"`
+	LastTradeID  int64  `json:"L"`
+	OpenPrice    string `json:"o"`
+	ClosePrice   string `json:"c"`
+	High         string `json:"h"`
+	Low          string `json:"l"`
+	Volume       string `json:"v"`
+	TradeCount   int64  `json:"n"`
+	IsClosed     bool   `json:"x"`
+}
+
+type KlineEvent struct {
+	EventType string    `json:"e"`
+	EventTime int64     `json:"E"`
+	Symbol    string    `json:"s"`
+	Kline     KlineData `json:"k"`
+}
+
 // instead of three stream functions and repetitive code
 // we can cover all streams using type parameters
 func Stream[T any](ctx context.Context, symbols []string, streamType string, out chan<- T) {
@@ -112,6 +135,10 @@ func StreamBookTicker(ctx context.Context, symbols []string, out chan<- BookTick
 
 func StreamTrade(ctx context.Context, symbols []string, out chan<- TradeEvent) {
 	Stream(ctx, symbols, "@trade", out)
+}
+
+func StreamKline(ctx context.Context, symbols []string, interval string, out chan<- KlineEvent) {
+	Stream(ctx, symbols, "@kline_"+interval, out)
 }
 
 // streamType is either @ticker, @bookTicker, @trade
