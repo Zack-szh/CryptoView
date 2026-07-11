@@ -11,10 +11,11 @@ type Server struct {
 	store  *db.Store   // entry point for db query
 }
 
-func New() *Server {
+func New(store *db.Store) *Server {
 	// init server
 	r := gin.Default()
-	s := &Server{router: r}
+
+	s := &Server{router: r, store: store}
 	s.registerRoutes()
 	return s
 }
