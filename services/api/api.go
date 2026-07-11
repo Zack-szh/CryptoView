@@ -1,10 +1,14 @@
 package api
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/szh/cryptoview/services/api/db"
+)
 
 // gin.New() or gin.Default() returns a gin.Engine type
 type Server struct {
-	router *gin.Engine
+	router *gin.Engine // accessing server specifics
+	store  *db.Store   // entry point for db query
 }
 
 func New() *Server {
@@ -17,7 +21,7 @@ func New() *Server {
 
 func (s *Server) registerRoutes() {
 	// all endpoints under v1 for now
-	v1 := s.router.Group("api/v1")
+	v1 := s.router.Group("/api/v1")
 
 	// -- symbols --
 	v1.GET("/symbols", s.getSymbol)

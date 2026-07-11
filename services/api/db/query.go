@@ -60,7 +60,8 @@ func (s *Store) GetSymbol(ctx context.Context) ([]string, error) {
 
 	defer rows.Close()
 
-	var symbols []string
+	symbols := make([]string, 0)
+
 	for rows.Next() {
 		var symbol string
 		if err := rows.Scan(&symbol); err != nil {
@@ -71,10 +72,55 @@ func (s *Store) GetSymbol(ctx context.Context) ([]string, error) {
 	return symbols, nil
 }
 
-func (s *Store) GetTicker(ctx context.Context) ([]string, error) {
-	return nil, nil
+func (s *Store) GetTicker(ctx context.Context, symbol string, limit int) ([]Ticker, error) {
+	// return last limit entries of ticker given a symbol
+	rows, err := s.pool.Query(ctx,
+		`SELECT time, symbol, last_price, open_price, high, low, volume, 
+		quote_volume, weighted_avg_price, trade_count 
+		FROM tickers WHERE symbol = $1 ORDER BY time DESC LIMIT $2`,
+		symbol, limit)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query tickers: %s: %v", symbol, err)
+	}
+
+	defer rows.Close()
+
+	tickers := make([]Ticker, 0)
+
+	for rows.Next() {
+		var t Ticker
+		if err := rows.Scan(&t.Time, &t.Symbol, &t.LastPrice, &t.OpenPrice, &t.High,
+			&t.Low, &t.Volume, &t.QuoteVolume, &t.WeightedAvgPrice, &t.TradeCount); err != nil {
+			return nil, err
+		}
+		tickers = append(tickers, t)
+	}
+
+	return tickers, nil
 }
 
-func (s *Store) GetTrade(ctx context.Context) ([]string, error) {
-	return nil, nil
+func (s *Store) GetTrade(ctx context.Context, symbol string, limit int) ([]Trade, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT time, symbol, price, quantity, is_maker, trade_id FROM 
+		trades WHERE symbol = $1 ORDER BY time DESC LIMIT $2`,
+		symbol, limit)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query trade: %s: %v", symbol, err)
+	}
+
+	defer rows.Close()
+
+	trades := make([]Trade, 0)
+
+	for rows.Next() {
+		var t Trade
+		if err := rows.Scan(&t.Time, &t.Symbol, &t.Price, &t.Quantity, &t.IsMaker, &t.TradeID); err != nil {
+			return nil, err
+		}
+
+		trades = append(trades, t)
+	}
+	return trades, nil
 }

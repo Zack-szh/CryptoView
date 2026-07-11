@@ -7,14 +7,13 @@ import (
 )
 
 func (s *Server) getSymbol(c *gin.Context) {
-	placeholder := http.StatusAccepted
-
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (s *Server) getTicker(c *gin.Context) {
-
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (s *Server) getTrade(c *gin.Context) {
-
+	c.JSON(http.StatusOK, gin.H{})
 }

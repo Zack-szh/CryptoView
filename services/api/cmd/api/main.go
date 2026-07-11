@@ -20,7 +20,7 @@ func main() {
 	}
 
 	server := api.New()
-	if err := server.Run(); err != nil {
+	if err := server.Run(":" + port); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 }
