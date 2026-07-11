@@ -38,6 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to db: %v", err)
 	}
+	defer store.Close()
 
 	server := api.New(store)
 	if err := server.Run(":" + port); err != nil {
