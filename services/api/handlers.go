@@ -26,7 +26,7 @@ func (s *Server) getTicker(c *gin.Context) {
 	limit, _ := strconv.Atoi(limitStr)
 
 	// get latest 10 rows by default
-	if limit <= 0 {
+	if limit <= 0 || limit > 500 {
 		limit = 10
 	}
 
@@ -47,7 +47,7 @@ func (s *Server) getTrade(c *gin.Context) {
 	limitStr := c.Query("limit")
 	limit, _ := strconv.Atoi(limitStr)
 
-	if limit <= 0 {
+	if limit <= 0 || limit > 500 {
 		limit = 10
 	}
 
@@ -69,7 +69,7 @@ func (s *Server) getKline(c *gin.Context) {
 	limitStr := c.Query("limit")
 	limit, _ := strconv.Atoi(limitStr)
 
-	if limit <= 0 {
+	if limit <= 0 || limit > 500 {
 		limit = 100
 	}
 
