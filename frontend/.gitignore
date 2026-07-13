@@ -1,26 +1,3 @@
-# Binaries
-bin/
-*.exe
-*.out
-*.app
-
-# Go build artifacts
-*.test
-*.o
-
-# Environment variables
-.env
-
-# Database dumps / local data
-*.sql~
-*.dump
-
-# Docker volumes / local runtime artifacts
-*.pid
-
-# session
-SESSION.md
-
 # Logs
 logs
 *.log
