@@ -23,6 +23,17 @@ export default function KlineChart({ klines, interval, onIntervalChange }: Props
       grid: { vertLines: { color: '#1f2937' }, horzLines: { color: '#1f2937' } },
       width: containerRef.current.clientWidth,
       height: 320,
+      timeScale: {timeVisible: true, secondsVisible: false},
+      localization: {
+        timeFormatter: (ts: number) => 
+          new Date(ts * 1000).toLocaleTimeString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          }),
+      }
     })
     const series = chart.addSeries(CandlestickSeries, {
       upColor: '#22c55e',

@@ -14,6 +14,6 @@ Useful commands:
 - launch api service and query data from DB: 
     go run ./services/api/cmd/api/main.go
 
-- launch frontend on http://localhost:3000/
+- launch frontend on http://localhost:3000/: 
     cd frontend
     npm run dev

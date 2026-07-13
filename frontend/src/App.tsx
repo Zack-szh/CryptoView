@@ -34,6 +34,8 @@ export default function App() {
     if (!selected) return
     fetchKline(selected, inter, 150).then(setKlines).catch(() => {})
   }, [selected, inter])
+  // refreshKlines is a separate refresh because we can select different time frame (1m, 5m, etc)
+  // and everytime we choose a different interval it should refresh
 
   useEffect(() => {
     refresh()
@@ -59,7 +61,7 @@ export default function App() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section className="bg-gray-900 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Recent Trades</h2>
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Recent Trades (binance.us)</h2>
           <TradeTable trades={trades} />
         </section>
 
