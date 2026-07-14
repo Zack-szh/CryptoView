@@ -44,12 +44,19 @@ func main() {
 	tickerCh := make(chan binance.TickerEvent)
 	bookTickerCh := make(chan binance.BookTickerEvent)
 	tradeCh := make(chan binance.TradeEvent)
-	klineCh := make(chan binance.KlineEvent)
+	klineCh := make(chan binance.KlineEvent, 100)
 
 	binance.StreamTicker(ctx, symbols, tickerCh)
 	binance.StreamBookTicker(ctx, symbols, bookTickerCh)
 	binance.StreamTrade(ctx, symbols, tradeCh)
-	binance.StreamKline(ctx, symbols, "1m", klineCh)
+
+	// kline streams (1m, 5m, 15m, 1h, 4h)
+	// one connection per interval
+	klineIntervals := []string{"1m", "5m", "15m", "1h", "4h"}
+
+	for _, interval := range klineIntervals {
+		binance.StreamKline(ctx, symbols, interval, klineCh)
+	}
 
 	fmt.Println("streaming — press Ctrl+C to stop")
 
