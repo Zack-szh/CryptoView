@@ -57,7 +57,7 @@ func fetchKlines(symbol, interval string, start, end time.Time) ([]RestKline, er
 		return nil, fmt.Errorf("failed to decode json: %w", err)
 	}
 
-	klines := make([]RestKline, len(raw))
+	klines := make([]RestKline, 0, len(raw))
 
 	for _, row := range raw {
 		// response should have 11 fields
