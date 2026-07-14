@@ -148,7 +148,11 @@ func (s *Store) GetTrade(ctx context.Context, symbol string, limit int) ([]Trade
 func (s *Store) GetKline(ctx context.Context, symbol string, interval string, limit int) ([]Kline, error) {
 	rows, err := s.pool.Query(ctx,
 		`SELECT open_time, close_time, symbol, interval, open, high, low, close, volume, trade_count, is_closed
-		FROM klines WHERE symbol = $1 AND interval = $2 ORDER BY open_time ASC LIMIT $3`,
+		FROM (
+			SELECT open_time, close_time, symbol, interval, open, high, low, close, volume, trade_count, is_closed
+			FROM klines WHERE symbol = $1 AND interval = $2 ORDER BY open_time DESC LIMIT $3
+		) AS latest_klines
+		ORDER BY open_time ASC`,
 		symbol, interval, limit)
 
 	if err != nil {

@@ -29,21 +29,6 @@ var intervalSteps = map[string]string{
 	"1d":  "1 day",
 }
 
-// finds the earliest open_time in kline given an interval
-// return type: earliest_open_time, has_data?, error
-func (s *Store) EarliestKline(ctx context.Context, symbol, interval string) (time.Time, bool, error) {
-	var t time.Time
-
-	err := s.pool.QueryRow(ctx,
-		`SELECT MIN(open_time) FROM klines WHERE symbol = $1 AND interval = $2`,
-		symbol, interval).Scan(&t)
-	if err != nil {
-		return time.Time{}, false, fmt.Errorf("earilest kline: %w", err)
-	}
-
-	return t, !t.IsZero(), nil
-}
-
 // FIndGaps() would look for missing windows of data starting from [since, present_time] using LEAD() window query
 // NOTE: here we return a list of Gaps
 func (s *Store) FindGaps(ctx context.Context, symbol, interval string, since time.Time) ([]Gap, error) {

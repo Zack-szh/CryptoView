@@ -103,7 +103,7 @@ func fetchKlines(symbol, interval string, start, end time.Time) ([]RestKline, er
 }
 
 // fillKline should keep calling fetchKlines until full [start, end] window is covered
-func fillKlines(ctx context.Context, symbol, interval string, start, end time.Time) ([]RestKline, error) {
+func FillKlines(ctx context.Context, symbol, interval string, start, end time.Time) ([]RestKline, error) {
 	var all []RestKline
 	var timePtr = start
 

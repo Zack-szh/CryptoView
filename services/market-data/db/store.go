@@ -111,3 +111,26 @@ func (s *Store) InsertKline(ctx context.Context, kline binance.KlineEvent) error
 
 	return nil
 }
+
+// insert historical kline to fill gap, from Binance REST endpoints
+func (s *Store) InsertRestKline(ctx context.Context, k binance.RestKline) error {
+	_, err := s.pool.Exec(ctx,
+		`INSERT INTO klines (open_time, close_time, symbol, interval, open, high, low,
+              close, volume, trade_count, is_closed)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)
+              ON CONFLICT (open_time, symbol, interval) DO UPDATE SET
+                      close_time  = EXCLUDED.close_time,
+                      high        = EXCLUDED.high,
+                      low         = EXCLUDED.low,
+                      close       = EXCLUDED.close,
+                      volume      = EXCLUDED.volume,
+                      trade_count = EXCLUDED.trade_count,
+                      is_closed   = EXCLUDED.is_closed`,
+		k.OpenTime, k.CloseTime, k.Symbol, k.Interval,
+		k.Open, k.High, k.Low, k.Close, k.Volume, k.TradeCount,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to insert rest kline: %w", err)
+	}
+	return nil
+}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -13,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/szh/cryptoview/services/market-data/binance"
 	"github.com/szh/cryptoview/services/market-data/db"
+	"github.com/szh/cryptoview/services/market-data/maintainer"
 )
 
 func main() {
@@ -57,6 +59,17 @@ func main() {
 	for _, interval := range klineIntervals {
 		binance.StreamKline(ctx, symbols, interval, klineCh)
 	}
+
+	// start Database maintainer to backfil historical data
+	historyDays := 30
+	if v, err := strconv.Atoi(os.Getenv("HISTORY_DAYS")); err == nil && v > 0 {
+		historyDays = v
+	}
+	go maintainer.Run(ctx, store, maintainer.Config{
+		Symbols:     symbols,
+		Intervals:   klineIntervals,
+		HistoryDays: historyDays,
+	})
 
 	fmt.Println("streaming — press Ctrl+C to stop")
 
