@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -66,14 +67,19 @@ func (s *Server) getTrade(c *gin.Context) {
 func (s *Server) getKline(c *gin.Context) {
 	symbol := c.Param("symbol")
 	interval := c.DefaultQuery("interval", "1m")
-	limitStr := c.Query("limit")
-	limit, _ := strconv.Atoi(limitStr)
 
-	if limit <= 0 || limit > 500 {
-		limit = 100
+	var since time.Time
+	if sinceStr := c.Query("since"); sinceStr != "" {
+		if ms, err := strconv.ParseInt(sinceStr, 10, 64); err == nil {
+			since = time.UnixMilli(ms).UTC()
+		} else {
+			since = time.Now().UTC().AddDate(0, 0, -30)
+		}
+	} else {
+		since = time.Now().UTC().AddDate(0, 0, -30)
 	}
 
-	klines, err := s.store.GetKline(c.Request.Context(), symbol, interval, limit)
+	klines, err := s.store.GetKline(c.Request.Context(), symbol, interval, since)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

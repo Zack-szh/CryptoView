@@ -20,8 +20,9 @@ export async function fetchTrade(symbol: string, limit = 10): Promise<Trade[]> {
     return res.json()
 }
 
-export async function fetchKline(symbol: string, interval = "1m", limit = 10): Promise<Kline[]> {
-    const res = await fetch(`${BASE}/kline/${symbol}?interval=${interval}&limit=${limit}`)
+export async function fetchKline(symbol: string, interval = "1m", sinceMs?: number): Promise<Kline[]> {
+    const since = sinceMs ?? Date.now() - 30 * 24 * 60 * 60 * 1000
+    const res = await fetch(`${BASE}/kline/${symbol}?interval=${interval}&since=${since}`)
     if (!res.ok) throw new Error("Failed to fetch kline")
     return res.json()
 }

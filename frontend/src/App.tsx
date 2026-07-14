@@ -32,7 +32,7 @@ export default function App() {
 
   const refreshKlines = useCallback(() => {
     if (!selected) return
-    fetchKline(selected, inter, 150).then(setKlines).catch(() => {})
+    fetchKline(selected, inter).then(setKlines).catch(() => {})
   }, [selected, inter])
   // refreshKlines is a separate refresh because we can select different time frame (1m, 5m, etc)
   // and everytime we choose a different interval it should refresh
