@@ -49,10 +49,9 @@ export default function App() {
     refresh()
     refreshKlines()
     refreshOrderBook()
-    // refresh data every 5 seconds
-    const t1 = setInterval(refresh, 5000)
-    const t2 = setInterval(refreshKlines, 5000)
-    // order book is refreshed every 1 second
+    
+    const t1 = setInterval(refresh, 1000)
+    const t2 = setInterval(refreshKlines, 1000)
     const t3 = setInterval(refreshOrderBook, 1000)
     return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3) }
   }, [refresh, refreshKlines, refreshOrderBook])
