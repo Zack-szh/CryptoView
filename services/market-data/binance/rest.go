@@ -32,7 +32,7 @@ type RestKline struct {
 }
 
 type OrderBook struct {
-	LastUpdateID int64      `json:"lastUpdated"`
+	LastUpdateID int64      `json:"lastUpdateId"`
 	Bids         [][]string `json:"bids"`
 	Asks         [][]string `json:"asks"`
 }
@@ -51,9 +51,12 @@ func fetchKlines(ctx context.Context, symbol, interval string, start, end time.T
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, BaseURL+"/api/v3/klines?"+params.Encode(), nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("http get: %w", err)
+		return nil, fmt.Errorf("http request: %w", err)
 	}
-	resp, _ := http.DefaultClient.Do(request)
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("http do: %w", err)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected response status: %d", resp.StatusCode)
@@ -149,9 +152,13 @@ func FetchOrderBook(ctx context.Context, symbol string, limit int) (*OrderBook, 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, BaseURL+"/api/v3/depth?"+params.Encode(), nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("http get: %w", err)
+		return nil, fmt.Errorf("http request: %w", err)
 	}
-	resp, _ := http.DefaultClient.Do(request)
+	resp, err := http.DefaultClient.Do(request)
+
+	if err != nil {
+		return nil, fmt.Errorf("http do: %w", err)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected response status: %d", resp.StatusCode)
