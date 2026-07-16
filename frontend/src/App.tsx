@@ -6,6 +6,7 @@ import TickerPanel from './components/TickerPanel'
 import TradeTable from './components/TradeTable'
 import KlineChart from './components/KlineChart'
 import OrderBookTable from './components/OrderBookTable'
+import OrderBookDepth from './components/OrderBookDepth'
 
 export default function App() {
   const [symbols, setSymbols] = useState<string[]>([])
@@ -81,8 +82,13 @@ export default function App() {
         </section>
 
          <section className="bg-gray-900 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Order Book</h2>
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Order Book (RAW)</h2>
           <OrderBookTable book={orderBook} />
+        </section>
+
+        <section className="bg-gray-900 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Order Book (DEPTH)</h2>
+          <OrderBookDepth book={orderBook} />
         </section>
 
       </div>
