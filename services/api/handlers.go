@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/szh/cryptoview/services/market-data/binance"
 )
 
 func (s *Server) getSymbol(c *gin.Context) {
@@ -87,4 +88,23 @@ func (s *Server) getKline(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, klines)
+}
+
+func (s *Server) getOrderBook(c *gin.Context) {
+	symbol := c.Param("symbol")
+	limitStr := c.DefaultQuery("limit", "20")
+	limit, err := strconv.Atoi(limitStr)
+
+	if err != nil || limit <= 0 || limit > 5000 {
+		limit = 20
+	}
+
+	book, err := binance.FetchOrderBook(c.Request.Context(), symbol, limit)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, book)
 }

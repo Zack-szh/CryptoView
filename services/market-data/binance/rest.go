@@ -31,8 +31,14 @@ type RestKline struct {
 	TradeCount int64
 }
 
+type OrderBook struct {
+	LastUpdateID int64      `json:"lastUpdated"`
+	Bids         [][]string `json:"bids"`
+	Asks         [][]string `json:"asks"`
+}
+
 // for binance REST endpoints, we can fetch up to 1000 candles per request
-func fetchKlines(symbol, interval string, start, end time.Time) ([]RestKline, error) {
+func fetchKlines(ctx context.Context, symbol, interval string, start, end time.Time) ([]RestKline, error) {
 	params := url.Values{}
 	params.Set("symbol", symbol)
 	params.Set("interval", interval)
@@ -40,16 +46,19 @@ func fetchKlines(symbol, interval string, start, end time.Time) ([]RestKline, er
 	params.Set("endTime", strconv.FormatInt(end.UnixMilli(), 10))
 	params.Set("limit", "1000")
 
-	resp, err := http.Get(BaseURL + "/api/v3/klines?" + params.Encode())
+	//resp, err := http.Get(BaseURL + "/api/v3/klines?" + params.Encode())
+	// fetch with context
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, BaseURL+"/api/v3/klines?"+params.Encode(), nil)
 
 	if err != nil {
 		return nil, fmt.Errorf("http get: %w", err)
 	}
-	defer resp.Body.Close()
+	resp, _ := http.DefaultClient.Do(request)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
 	// decode message
 	var raw [][]json.RawMessage
@@ -112,7 +121,7 @@ func FillKlines(ctx context.Context, symbol, interval string, start, end time.Ti
 			return all, ctx.Err()
 		}
 
-		batch, err := fetchKlines(symbol, interval, timePtr, end)
+		batch, err := fetchKlines(ctx, symbol, interval, timePtr, end)
 		if err != nil {
 			return nil, err
 		}
@@ -129,4 +138,30 @@ func FillKlines(ctx context.Context, symbol, interval string, start, end time.Ti
 		time.Sleep(200 * time.Millisecond)
 	}
 	return all, nil
+}
+
+// GET /api/v3/depth
+func FetchOrderBook(ctx context.Context, symbol string, limit int) (*OrderBook, error) {
+	params := url.Values{}
+	params.Set("symbol", symbol)
+	params.Set("limit", strconv.Itoa(limit))
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, BaseURL+"/api/v3/depth?"+params.Encode(), nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("http get: %w", err)
+	}
+	resp, _ := http.DefaultClient.Do(request)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response status: %d", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+
+	var book OrderBook
+	if err := json.NewDecoder(resp.Body).Decode(&book); err != nil {
+		return nil, fmt.Errorf("failed to decode order book: %w", err)
+	}
+
+	return &book, nil
 }

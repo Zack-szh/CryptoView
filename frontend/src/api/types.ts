@@ -33,3 +33,9 @@ export interface Kline {
   trade_count: number
   is_closed: boolean
 }
+
+export interface OrderBook {
+  last_update_id: number 
+  bids: [string, string][]
+  asks: [string, string][]
+}
