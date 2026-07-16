@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchSymbol, fetchTicker, fetchTrade, fetchKline } from './api/client'
-import type { Ticker, Trade, Kline } from './api/types'
+import { fetchSymbol, fetchTicker, fetchTrade, fetchKline, fetchOrderBook } from './api/client'
+import type { Ticker, Trade, Kline, OrderBook } from './api/types'
 import SymbolSelector from './components/SymbolSelector'
 import TickerPanel from './components/TickerPanel'
 import TradeTable from './components/TradeTable'
 import KlineChart from './components/KlineChart'
+import OrderBookTable from './components/OrderBookTable'
 
 export default function App() {
   const [symbols, setSymbols] = useState<string[]>([])
@@ -15,6 +16,7 @@ export default function App() {
   // NOTE: setInterval is reserved for javascript, thus setInter
   const [inter, setInter] = useState('1m')
   const [error, setError] = useState<string | null>(null)
+  const [orderBook, setOrderBook] = useState<OrderBook | null>(null)
 
   useEffect(() => {
     fetchSymbol()
@@ -37,14 +39,23 @@ export default function App() {
   // refreshKlines is a separate refresh because we can select different time frame (1m, 5m, etc)
   // and everytime we choose a different interval it should refresh
 
+  // for now we fetch order book depth = 20
+  const refreshOrderBook = useCallback(() => {
+    if (!selected) return
+    fetchOrderBook(selected, 20).then(setOrderBook).catch(() => {})
+  }, [selected])
+
   useEffect(() => {
     refresh()
     refreshKlines()
+    refreshOrderBook()
     // refresh data every 5 seconds
     const t1 = setInterval(refresh, 5000)
     const t2 = setInterval(refreshKlines, 5000)
-    return () => { clearInterval(t1); clearInterval(t2) }
-  }, [refresh, refreshKlines])
+    // order book is refreshed every 1 second
+    const t3 = setInterval(refreshOrderBook, 1000)
+    return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3) }
+  }, [refresh, refreshKlines, refreshOrderBook])
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6 space-y-6">
@@ -69,6 +80,12 @@ export default function App() {
           <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Candlestick Chart</h2>
           <KlineChart klines={klines} interval={inter} onIntervalChange={setInter} />
         </section>
+
+         <section className="bg-gray-900 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Order Book</h2>
+          <OrderBookTable book={orderBook} />
+        </section>
+
       </div>
     </div>
   )

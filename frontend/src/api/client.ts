@@ -27,7 +27,7 @@ export async function fetchKline(symbol: string, interval = "1m", sinceMs?: numb
     return res.json()
 }
 
-export async function fetchOrderBook(symbol: string, limit = "10"): Promise<OrderBook> {
+export async function fetchOrderBook(symbol: string, limit = 20): Promise<OrderBook> {
     const res = await fetch(`${BASE}/orderbook/${symbol}?limit=${limit}`)
     if (!res.ok) throw new Error("Failed to fetch orderbook")
     return res.json()

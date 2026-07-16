@@ -18,7 +18,7 @@ function Row({price, quantity, side}: {price: string; quantity: string; side: 'b
 
 // for asks, we do book.asks.slice().reveres() because the lowest ask is closest to spread
 // AKA: lowest ask should always be right above highest bid
-export default function OrderBook({book} : Props) {
+export default function OrderBookTable({book} : Props) {
     if (!book) return <p className="text-gray-500 text-xs">LOADING...</p>
 
     return (
