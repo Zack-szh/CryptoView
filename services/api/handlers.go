@@ -102,7 +102,7 @@ func (s *Server) getOrderBook(c *gin.Context) {
 	book, err := binance.FetchOrderBook(c.Request.Context(), symbol, limit)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
 	}
 
