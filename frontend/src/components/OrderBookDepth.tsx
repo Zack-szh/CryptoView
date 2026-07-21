@@ -61,8 +61,8 @@ export default function OrderBookDepth({ book }: Props) {
       {asksReversed.map(([price, quantity], i) => (
         <Row
           key={price}
-          price={price}
-          quantity={quantity}
+          price={Number(price).toFixed(2)}
+          quantity={Number(quantity).toFixed(5)}
           side="ask"
           pct={(askCumulative[i] / maxAsk) * 100}
         />
@@ -71,8 +71,8 @@ export default function OrderBookDepth({ book }: Props) {
       {book.bids.map(([price, quantity], i) => (
         <Row
           key={price}
-          price={price}
-          quantity={quantity}
+          price={Number(price).toFixed(2)}
+          quantity={Number(quantity).toFixed(5)}
           side="bid"
           pct={(bidCumulative[i] / maxBid) * 100}
         />
