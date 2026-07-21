@@ -2,8 +2,11 @@
 package indicators
 
 import (
+	"context"
 	"fmt"
 	"time"
+
+	"github.com/szh/cryptoview/services/api/db"
 )
 
 // default values for technical indicators
@@ -94,4 +97,17 @@ func extractQty(levels [][]string) []float64 {
 	}
 
 	return qty
+}
+
+func BuildSnapshot(ctx context.Context, store *db.Store, symbol, interval string) (*Snapshot, error) {
+	klines, err := store.GetKlineLimit(ctx, symbol, interval, LookbackBars+1)
+
+	if err != nil {
+		return nil, fmt.Errorf("features: fetch klines: %w", err)
+	}
+
+	if len(klines) == 0 {
+		return nil, fmt.Errorf("features: no kline data for %s/%s", symbol, interval)
+	}
+
 }
