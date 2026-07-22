@@ -4,9 +4,11 @@ package indicators
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/szh/cryptoview/services/api/db"
+	"github.com/szh/cryptoview/services/market-data/binance"
 )
 
 // default values for technical indicators
@@ -110,4 +112,74 @@ func BuildSnapshot(ctx context.Context, store *db.Store, symbol, interval string
 		return nil, fmt.Errorf("features: no kline data for %s/%s", symbol, interval)
 	}
 
+	last := klines[len(klines)-1]
+	snap := &Snapshot{
+		Symbol:    symbol,
+		Interval:  interval,
+		Time:      last.CloseTime,
+		LastPrice: last.ClosePrice,
+	}
+
+	// only use closed candles for indicator math
+	closedKlines := make([]db.Kline, 0, len(klines))
+	for _, k := range klines {
+		if k.IsClosed {
+			closedKlines = append(closedKlines, k)
+		}
+	}
+
+	highs := make([]float64, len(closedKlines))
+	lows := make([]float64, len(closedKlines))
+	closes := make([]float64, len(closedKlines))
+	volumes := make([]float64, len(closedKlines))
+
+	for i, k := range closedKlines {
+		highs[i] = k.High
+		lows[i] = k.Low
+		closes[i] = k.ClosePrice
+		volumes[i] = k.Volume
+	}
+
+	if v, ok := SMA(closes, SMAShort); ok {
+		snap.SMA20 = &v
+	}
+	if v, ok := SMA(closes, SMALong); ok {
+		snap.SMA50 = &v
+	}
+	if v, ok := EMA(closes, EMASlow); ok {
+		snap.EMA12 = &v
+	}
+	if v, ok := EMA(closes, EMAFast); ok {
+		snap.EMA26 = &v
+	}
+	if v, ok := RSI(closes, RSIPeriod); ok {
+		snap.RSI14 = &v
+	}
+	if m, s, h, ok := MACD(closes, MACDFast, MACDSlow, MACDSignal); ok {
+		snap.MACD = &MACDResult{MACD: m, Signal: s, Histogram: h}
+	}
+	if mid, up, low, ok := BollingerBands(closes, BollingerPeriod, BollingerStdDev); ok {
+		snap.Bollinger = &BollingerResult{Middle: mid, Upper: up, Lower: low}
+	}
+	if v, ok := RealizedVolatility(closes, VolWindow, barsPerYear(interval)); ok {
+		snap.RealizedVolatility = &v
+	}
+	if v, ok := VWAP(highs, lows, closes, volumes, VWAPWindow); ok {
+		snap.VWAP = &v
+	}
+
+	// best-effort order book imbalance
+	// if failed, the field would just be nil
+	book, err := binance.FetchOrderBook(ctx, symbol, OrderBookLevels)
+	if err != nil {
+		log.Printf("[indicators] orderbook fetch failed for %s: %v", symbol, err)
+	} else if book != nil {
+		askQty := extractQty(book.Asks)
+		bidQty := extractQty(book.Bids)
+		if v, ok := OrderBookImbalance(bidQty, askQty, OrderBookLevels); ok {
+			snap.OrderBookImbalance = &v
+		}
+	}
+
+	return snap, nil
 }
