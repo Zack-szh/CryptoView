@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/szh/cryptoview/services/indicators"
 	"github.com/szh/cryptoview/services/market-data/binance"
 )
 
@@ -107,4 +108,16 @@ func (s *Server) getOrderBook(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, book)
+}
+
+func (s *Server) getIndicators(c *gin.Context) {
+	symbol := c.Param("symbol")
+	interval := c.DefaultQuery("interval", "1m")
+
+	snap, err := indicators.BuildSnapshot(c.Request.Context(), s.store, symbol, interval)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, snap)
 }

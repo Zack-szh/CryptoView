@@ -35,6 +35,7 @@ func (s *Server) registerRoutes() {
 	// -- orderbook --
 	v1.GET("/orderbook/:symbol", s.getOrderBook)
 	// more endpoints: WORK IN PROGRESS
+	v1.GET("/indicator/:symbol", s.getIndicators)
 }
 
 // Run() starts the server on given port (Ex: 8080)
