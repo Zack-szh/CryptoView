@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchSymbol, fetchTicker, fetchTrade, fetchKline, fetchOrderBook } from './api/client'
-import type { Ticker, Trade, Kline, OrderBook } from './api/types'
+import { fetchSymbol, fetchTicker, fetchTrade, fetchKline, fetchOrderBook, fetchIndicator } from './api/client'
+import type { Ticker, Trade, Kline, OrderBook, Indicator } from './api/types'
 import SymbolSelector from './components/SymbolSelector'
 import TickerPanel from './components/TickerPanel'
 import TradeTable from './components/TradeTable'
 import KlineChart from './components/KlineChart'
 import OrderBookTable from './components/OrderBookTable'
 import OrderBookDepth from './components/OrderBookDepth'
+import IndicatorPanel from './components/IndicatorPanel'
 
 export default function App() {
   const [symbols, setSymbols] = useState<string[]>([])
@@ -18,6 +19,7 @@ export default function App() {
   const [inter, setInter] = useState('1m')
   const [error, setError] = useState<string | null>(null)
   const [orderBook, setOrderBook] = useState<OrderBook | null>(null)
+  const [indicator, setIndicator] = useState<Indicator | null>(null)
 
   useEffect(() => {
     fetchSymbol()
@@ -46,16 +48,23 @@ export default function App() {
     fetchOrderBook(selected, 20).then(setOrderBook).catch(() => {})
   }, [selected])
 
+  const refreshIndicator = useCallback(() => {
+    if (!selected) return 
+    fetchIndicator(selected, inter).then(setIndicator).catch(() => {})
+  }, [selected, inter])
+
   useEffect(() => {
     refresh()
     refreshKlines()
     refreshOrderBook()
+    refreshIndicator()
     
-    const t1 = setInterval(refresh, 1000)
-    const t2 = setInterval(refreshKlines, 1000)
+    const t1 = setInterval(refresh, 2000)
+    const t2 = setInterval(refreshKlines, 2000)
     const t3 = setInterval(refreshOrderBook, 1000)
-    return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3) }
-  }, [refresh, refreshKlines, refreshOrderBook])
+    const t4 = setInterval(refreshIndicator, 2000)
+    return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3); clearInterval(t4) }
+  }, [refresh, refreshKlines, refreshOrderBook, refreshIndicator])
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6 space-y-6">
@@ -79,6 +88,11 @@ export default function App() {
         <section className="bg-gray-900 rounded-xl p-5">
           <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Candlestick Chart</h2>
           <KlineChart klines={klines} interval={inter} onIntervalChange={setInter} />
+        </section>
+
+        <section className="bg-gray-900 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Indicators</h2>
+          <IndicatorPanel indicators={indicator} /> 
         </section>
 
          <section className="bg-gray-900 rounded-xl p-5">

@@ -176,12 +176,12 @@ func (s *Store) GetKline(ctx context.Context, symbol string, interval string, si
 // this getKline function always get the last 'limit' candles, instead of a time window (since)
 func (s *Store) GetKlineLimit(ctx context.Context, symbol, interval string, limit int) ([]Kline, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT open_time, close_time, symbol, interval, open, high, low, clotrade_count, is_closed
-			FROM (
-					SELECT open_time, close_time, symbol, interval, open, high, ltrade_count, is_closed
-					FROM klines WHERE symbol = $1 AND interval = $2
-					ORDER BY open_time DESC LIMIT $3
-			) sub ORDER BY open_time ASC`,
+		`SELECT open_time, close_time, symbol, interval, open, high, low, close, volume, trade_count, is_closed
+				FROM (
+				SELECT open_time, close_time, symbol, interval, open, high, low, close, volume, trade_count, is_closed
+				FROM klines WHERE symbol = $1 AND interval = $2
+				ORDER BY open_time DESC LIMIT $3
+				) sub ORDER BY open_time ASC`,
 		symbol, interval, limit)
 
 	if err != nil {

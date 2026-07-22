@@ -39,3 +39,32 @@ export interface OrderBook {
   bids: [string, string][]
   asks: [string, string][]
 }
+
+export interface MACDResult {
+  macd: number
+  signal: number
+  histogram: number
+}
+
+export interface BollingerResult {
+  middle: number
+  upper: number
+  lower: number
+}
+
+export interface Indicator {
+  symbol: string
+  interval: string
+  time: string
+  last_price: number
+  sma_20: number | null
+  sma_50: number | null
+  ema_12: number | null
+  ema_26: number | null
+  rsi_14: number | null
+  macd: MACDResult | null
+  bollinger: BollingerResult | null
+  realized_volatility: number | null
+  vwap: number | null
+  orderbook_imbalance: number | null
+}

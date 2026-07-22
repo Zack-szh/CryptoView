@@ -147,10 +147,10 @@ func BuildSnapshot(ctx context.Context, store *db.Store, symbol, interval string
 		snap.SMA50 = &v
 	}
 	if v, ok := EMA(closes, EMASlow); ok {
-		snap.EMA12 = &v
+		snap.EMA26 = &v
 	}
 	if v, ok := EMA(closes, EMAFast); ok {
-		snap.EMA26 = &v
+		snap.EMA12 = &v
 	}
 	if v, ok := RSI(closes, RSIPeriod); ok {
 		snap.RSI14 = &v
