@@ -233,8 +233,11 @@ func BuildSnapshot(ctx context.Context, store *db.Store, symbol, interval string
 // like BuildSnapshot, but returns the full history of each chartable indicator instead of
 // just the latest value. order book imbalance is intentionally excluded — it's a read of the
 // live order book, not something derived from kline history, so there's no series to build.
-func BuildIndicatorSeries(ctx context.Context, store *db.Store, symbol, interval string) (*IndicatorSeries, error) {
-	klines, err := store.GetKlineLimit(ctx, symbol, interval, LookbackBars+1)
+// 7/27/2026 update: changed GetKlineLimit to GetKline
+// this way both kline and indicator lines cover the same historical window
+// so for now GetKlineLimit is just for ease of computing the indicator snapshot
+func BuildIndicatorSeries(ctx context.Context, store *db.Store, symbol, interval string, since time.Time) (*IndicatorSeries, error) {
+	klines, err := store.GetKline(ctx, symbol, interval, since)
 
 	if err != nil {
 		return nil, fmt.Errorf("features: fetch klines: %w", err)

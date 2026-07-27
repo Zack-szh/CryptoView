@@ -56,14 +56,14 @@ const PANE_TOGGLES: { key: PaneKey; label: string; color: string }[] = [
 const ALL_TOGGLES = [...OVERLAY_TOGGLES, ...PANE_TOGGLES]
 
 const axisTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'UTC',
+  timeZone: 'America/New_York',
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
 })
 
 const axisDateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'UTC',
+  timeZone: 'America/New_York',
   month: '2-digit',
   day: '2-digit',
   hour: '2-digit',
@@ -71,7 +71,7 @@ const axisDateTimeFormatter = new Intl.DateTimeFormat('en-US', {
 })
 
 const hoverTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'UTC',
+  timeZone: 'America/New_York',
   year: 'numeric',
   month: 'short',
   day: '2-digit',

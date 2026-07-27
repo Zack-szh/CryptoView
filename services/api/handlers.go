@@ -66,20 +66,21 @@ func (s *Server) getTrade(c *gin.Context) {
 	c.JSON(http.StatusOK, trades)
 }
 
+// shared by getKline and getIndicatorSeries so both cover the same default range
+// (30 days back) when the caller doesn't pin an explicit `since`
+func parseSince(c *gin.Context) time.Time {
+	if sinceStr := c.Query("since"); sinceStr != "" {
+		if ms, err := strconv.ParseInt(sinceStr, 10, 64); err == nil {
+			return time.UnixMilli(ms).UTC()
+		}
+	}
+	return time.Now().UTC().AddDate(0, 0, -30)
+}
+
 func (s *Server) getKline(c *gin.Context) {
 	symbol := c.Param("symbol")
 	interval := c.DefaultQuery("interval", "1m")
-
-	var since time.Time
-	if sinceStr := c.Query("since"); sinceStr != "" {
-		if ms, err := strconv.ParseInt(sinceStr, 10, 64); err == nil {
-			since = time.UnixMilli(ms).UTC()
-		} else {
-			since = time.Now().UTC().AddDate(0, 0, -30)
-		}
-	} else {
-		since = time.Now().UTC().AddDate(0, 0, -30)
-	}
+	since := parseSince(c)
 
 	klines, err := s.store.GetKline(c.Request.Context(), symbol, interval, since)
 
@@ -125,8 +126,9 @@ func (s *Server) getIndicators(c *gin.Context) {
 func (s *Server) getIndicatorSeries(c *gin.Context) {
 	symbol := c.Param("symbol")
 	interval := c.DefaultQuery("interval", "1m")
+	since := parseSince(c)
 
-	series, err := indicators.BuildIndicatorSeries(c.Request.Context(), s.store, symbol, interval)
+	series, err := indicators.BuildIndicatorSeries(c.Request.Context(), s.store, symbol, interval, since)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

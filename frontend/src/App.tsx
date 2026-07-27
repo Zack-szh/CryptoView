@@ -54,8 +54,10 @@ export default function App() {
     fetchIndicator(selected, inter).then(setIndicator).catch(() => {})
   }, [selected, inter])
 
-  // separate from refreshIndicator: this drives the chart overlay lines, so it needs
-  // to stay in step with refreshKlines (same interval) rather than the stats sidebar
+  // separate from refreshIndicator: this drives the chart overlay lines, and now fetches
+  // the full 30-day history (not just a 200-bar tail) to cover everything the candle chart
+  // shows. the backend only computes off closed candles, so this only changes once a new
+  // bar closes — no need to poll it as fast as the live ticker/kline data
   const refreshIndicatorSeries = useCallback(() => {
     if (!selected) return
     fetchIndicatorSeries(selected, inter).then(setIndicatorSeries).catch(() => {})
@@ -72,7 +74,7 @@ export default function App() {
     const t2 = setInterval(refreshKlines, 2000)
     const t3 = setInterval(refreshOrderBook, 1000)
     const t4 = setInterval(refreshIndicator, 2000)
-    const t5 = setInterval(refreshIndicatorSeries, 2000)
+    const t5 = setInterval(refreshIndicatorSeries, 15000)
     return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3); clearInterval(t4); clearInterval(t5) }
   }, [refresh, refreshKlines, refreshOrderBook, refreshIndicator, refreshIndicatorSeries])
 
@@ -93,16 +95,14 @@ export default function App() {
         <section className="bg-gray-900 rounded-xl p-5">
           <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Recent Trades (binance.us)</h2>
           <TradeTable trades={trades} />
+          <br></br>
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Indicators</h2>
+          <IndicatorPanel indicators={indicator} /> 
         </section>
 
         <section className="bg-gray-900 rounded-xl p-5">
           <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Candlestick Chart</h2>
           <KlineChart klines={klines} interval={inter} onIntervalChange={setInter} series={indicatorSeries} />
-        </section>
-
-        <section className="bg-gray-900 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Indicators</h2>
-          <IndicatorPanel indicators={indicator} /> 
         </section>
 
          <section className="bg-gray-900 rounded-xl p-5">
