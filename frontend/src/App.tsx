@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchSymbol, fetchTicker, fetchTrade, fetchKline, fetchOrderBook, fetchIndicator } from './api/client'
-import type { Ticker, Trade, Kline, OrderBook, Indicator } from './api/types'
+import { fetchSymbol, fetchTicker, fetchTrade, fetchKline, fetchOrderBook, fetchIndicator, fetchIndicatorSeries } from './api/client'
+import type { Ticker, Trade, Kline, OrderBook, Indicator, IndicatorSeries } from './api/types'
 import SymbolSelector from './components/SymbolSelector'
 import TickerPanel from './components/TickerPanel'
 import TradeTable from './components/TradeTable'
@@ -20,6 +20,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [orderBook, setOrderBook] = useState<OrderBook | null>(null)
   const [indicator, setIndicator] = useState<Indicator | null>(null)
+  const [indicatorSeries, setIndicatorSeries] = useState<IndicatorSeries | null>(null)
 
   useEffect(() => {
     fetchSymbol()
@@ -49,8 +50,15 @@ export default function App() {
   }, [selected])
 
   const refreshIndicator = useCallback(() => {
-    if (!selected) return 
+    if (!selected) return
     fetchIndicator(selected, inter).then(setIndicator).catch(() => {})
+  }, [selected, inter])
+
+  // separate from refreshIndicator: this drives the chart overlay lines, so it needs
+  // to stay in step with refreshKlines (same interval) rather than the stats sidebar
+  const refreshIndicatorSeries = useCallback(() => {
+    if (!selected) return
+    fetchIndicatorSeries(selected, inter).then(setIndicatorSeries).catch(() => {})
   }, [selected, inter])
 
   useEffect(() => {
@@ -58,13 +66,15 @@ export default function App() {
     refreshKlines()
     refreshOrderBook()
     refreshIndicator()
-    
+    refreshIndicatorSeries()
+
     const t1 = setInterval(refresh, 2000)
     const t2 = setInterval(refreshKlines, 2000)
     const t3 = setInterval(refreshOrderBook, 1000)
     const t4 = setInterval(refreshIndicator, 2000)
-    return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3); clearInterval(t4) }
-  }, [refresh, refreshKlines, refreshOrderBook, refreshIndicator])
+    const t5 = setInterval(refreshIndicatorSeries, 2000)
+    return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3); clearInterval(t4); clearInterval(t5) }
+  }, [refresh, refreshKlines, refreshOrderBook, refreshIndicator, refreshIndicatorSeries])
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6 space-y-6">
@@ -87,7 +97,7 @@ export default function App() {
 
         <section className="bg-gray-900 rounded-xl p-5">
           <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Candlestick Chart</h2>
-          <KlineChart klines={klines} interval={inter} onIntervalChange={setInter} />
+          <KlineChart klines={klines} interval={inter} onIntervalChange={setInter} series={indicatorSeries} />
         </section>
 
         <section className="bg-gray-900 rounded-xl p-5">

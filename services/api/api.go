@@ -34,8 +34,10 @@ func (s *Server) registerRoutes() {
 	v1.GET("/kline/:symbol", s.getKline)
 	// -- orderbook --
 	v1.GET("/orderbook/:symbol", s.getOrderBook)
-	// more endpoints: WORK IN PROGRESS
+	// -- indicators as snapshot --
 	v1.GET("/indicator/:symbol", s.getIndicators)
+	// -- indicators as series (for plotting) --
+	v1.GET("/indicator/:symbol/series", s.getIndicatorSeries)
 }
 
 // Run() starts the server on given port (Ex: 8080)

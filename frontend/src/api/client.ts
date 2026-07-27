@@ -1,4 +1,4 @@
-import type {Ticker, Trade, Kline, OrderBook, Indicator} from './types'
+import type {Ticker, Trade, Kline, OrderBook, Indicator, IndicatorSeries} from './types'
 
 const BASE = '/api/v1'
 
@@ -35,6 +35,12 @@ export async function fetchOrderBook(symbol: string, limit = 20): Promise<OrderB
 
 export async function fetchIndicator(symbol: string, interval = "1m"): Promise<Indicator> {
     const res = await fetch(`${BASE}/indicator/${symbol}?interval=${interval}`)
-    if (!res.ok) throw new Error("Failed to fetch indicators") 
+    if (!res.ok) throw new Error("Failed to fetch indicators")
+    return res.json()
+}
+
+export async function fetchIndicatorSeries(symbol: string, interval = "1m"): Promise<IndicatorSeries> {
+    const res = await fetch(`${BASE}/indicator/${symbol}/series?interval=${interval}`)
+    if (!res.ok) throw new Error("Failed to fetch indicator series")
     return res.json()
 }

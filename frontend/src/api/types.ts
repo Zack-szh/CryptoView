@@ -68,3 +68,28 @@ export interface Indicator {
   vwap: number | null
   orderbook_imbalance: number | null
 }
+
+// each array below is index-aligned with `times`; entries are null until that indicator
+// has enough history to compute (e.g. sma_50 is null for the first 49 points)
+export interface IndicatorSeries {
+  symbol: string
+  interval: string
+  times: string[]
+
+  sma_20: (number | null)[]
+  sma_50: (number | null)[]
+  ema_12: (number | null)[]
+  ema_26: (number | null)[]
+
+  bollinger_mid: (number | null)[]
+  bollinger_upper: (number | null)[]
+  bollinger_lower: (number | null)[]
+
+  vwap: (number | null)[]
+
+  macd: (number | null)[]
+  macd_signal: (number | null)[]
+  macd_hist: (number | null)[]
+
+  rsi_14: (number | null)[]
+}

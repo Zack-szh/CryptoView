@@ -121,3 +121,15 @@ func (s *Server) getIndicators(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, snap)
 }
+
+func (s *Server) getIndicatorSeries(c *gin.Context) {
+	symbol := c.Param("symbol")
+	interval := c.DefaultQuery("interval", "1m")
+
+	series, err := indicators.BuildIndicatorSeries(c.Request.Context(), s.store, symbol, interval)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, series)
+}

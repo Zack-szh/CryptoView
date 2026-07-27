@@ -61,6 +61,33 @@ type Snapshot struct {
 	OrderBookImbalance *float64         `json:"orderbook_imbalance"`
 }
 
+// like Snapshot, but holds a full time-aligned series per indicator instead of a single
+// latest value — meant for plotting on the candle chart rather than a stats sidebar.
+// each indicator slice is index-aligned with Times; entries are nil until that
+// indicator has enough history to compute (e.g. SMA50 is nil for the first 49 points)
+type IndicatorSeries struct {
+	Symbol   string      `json:"symbol"`
+	Interval string      `json:"interval"`
+	Times    []time.Time `json:"times"`
+
+	SMA20 []*float64 `json:"sma_20"`
+	SMA50 []*float64 `json:"sma_50"`
+	EMA12 []*float64 `json:"ema_12"`
+	EMA26 []*float64 `json:"ema_26"`
+
+	BollingerMid   []*float64 `json:"bollinger_mid"`
+	BollingerUpper []*float64 `json:"bollinger_upper"`
+	BollingerLower []*float64 `json:"bollinger_lower"`
+
+	VWAP []*float64 `json:"vwap"`
+
+	MACD       []*float64 `json:"macd"`
+	MACDSignal []*float64 `json:"macd_signal"`
+	MACDHist   []*float64 `json:"macd_hist"`
+
+	RSI14 []*float64 `json:"rsi_14"`
+}
+
 // for annualized realized vol
 func barsPerYear(interval string) float64 {
 	switch interval {
@@ -81,6 +108,25 @@ func barsPerYear(interval string) float64 {
 	default:
 		return 365 * 24 * 60
 	}
+}
+
+// every *Series function in indicators.go is trailing-aligned: it always ends at the
+// last input point, it just starts late depending on how much warmup the indicator needs.
+// so a series can always be lined up against the full input by right-aligning it and
+// leaving the front padded with nil (not yet computable)
+func alignSeries(times []time.Time, series []float64, ok bool) []*float64 {
+	aligned := make([]*float64, len(times))
+
+	if !ok {
+		return aligned
+	}
+
+	offset := len(times) - len(series)
+	for i, v := range series {
+		v := v
+		aligned[offset+i] = &v
+	}
+	return aligned
 }
 
 // extract quantity for each order book price level
@@ -182,4 +228,80 @@ func BuildSnapshot(ctx context.Context, store *db.Store, symbol, interval string
 	}
 
 	return snap, nil
+}
+
+// like BuildSnapshot, but returns the full history of each chartable indicator instead of
+// just the latest value. order book imbalance is intentionally excluded — it's a read of the
+// live order book, not something derived from kline history, so there's no series to build.
+func BuildIndicatorSeries(ctx context.Context, store *db.Store, symbol, interval string) (*IndicatorSeries, error) {
+	klines, err := store.GetKlineLimit(ctx, symbol, interval, LookbackBars+1)
+
+	if err != nil {
+		return nil, fmt.Errorf("features: fetch klines: %w", err)
+	}
+
+	if len(klines) == 0 {
+		return nil, fmt.Errorf("features: no kline data for %s/%s", symbol, interval)
+	}
+
+	// only use closed candles for indicator math
+	closedKlines := make([]db.Kline, 0, len(klines))
+	for _, k := range klines {
+		if k.IsClosed {
+			closedKlines = append(closedKlines, k)
+		}
+	}
+
+	times := make([]time.Time, len(closedKlines))
+	highs := make([]float64, len(closedKlines))
+	lows := make([]float64, len(closedKlines))
+	closes := make([]float64, len(closedKlines))
+	volumes := make([]float64, len(closedKlines))
+
+	for i, k := range closedKlines {
+		// open time, not close time — must match how the frontend keys candles on the
+		// time axis (KlineChart.tsx plots each candle at its open_time), so a given
+		// indicator point lines up under the candle it was computed from
+		times[i] = k.OpenTime
+		highs[i] = k.High
+		lows[i] = k.Low
+		closes[i] = k.ClosePrice
+		volumes[i] = k.Volume
+	}
+
+	series := &IndicatorSeries{
+		Symbol:   symbol,
+		Interval: interval,
+		Times:    times,
+	}
+
+	sma20, ok := SMASeries(closes, SMAShort)
+	series.SMA20 = alignSeries(times, sma20, ok)
+
+	sma50, ok := SMASeries(closes, SMALong)
+	series.SMA50 = alignSeries(times, sma50, ok)
+
+	ema12, ok := EMASeries(closes, EMAFast)
+	series.EMA12 = alignSeries(times, ema12, ok)
+
+	ema26, ok := EMASeries(closes, EMASlow)
+	series.EMA26 = alignSeries(times, ema26, ok)
+
+	bollMid, bollUp, bollLow, ok := BollingerSeries(closes, BollingerPeriod, BollingerStdDev)
+	series.BollingerMid = alignSeries(times, bollMid, ok)
+	series.BollingerUpper = alignSeries(times, bollUp, ok)
+	series.BollingerLower = alignSeries(times, bollLow, ok)
+
+	vwap, ok := VWAPSeries(highs, lows, closes, volumes, VWAPWindow)
+	series.VWAP = alignSeries(times, vwap, ok)
+
+	macd, macdSignal, macdHist, ok := MACDSeries(closes, MACDFast, MACDSlow, MACDSignal)
+	series.MACD = alignSeries(times, macd, ok)
+	series.MACDSignal = alignSeries(times, macdSignal, ok)
+	series.MACDHist = alignSeries(times, macdHist, ok)
+
+	rsi, ok := RSISeries(closes, RSIPeriod)
+	series.RSI14 = alignSeries(times, rsi, ok)
+
+	return series, nil
 }
