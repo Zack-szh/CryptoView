@@ -175,8 +175,11 @@ export default function KlineChart({ klines, interval, onIntervalChange, series 
   const rsiRef = useRef<LinePaneSeries | null>(null)
 
   const [visible, setVisible] = useState<Record<ToggleKey, boolean>>(() =>
-    Object.fromEntries(ALL_TOGGLES.map((t) => [t.key, true])) as Record<ToggleKey, boolean>,
-  )
+  Object.fromEntries([
+    ...OVERLAY_TOGGLES.map((t) => [t.key, false]),
+    ...PANE_TOGGLES.map((t) => [t.key, true]),
+  ]) as Record<ToggleKey, boolean>,
+)
 
   function toggleIndicator(key: ToggleKey) {
     setVisible((prev) => ({ ...prev, [key]: !prev[key] }))
