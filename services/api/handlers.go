@@ -77,12 +77,32 @@ func parseSince(c *gin.Context) time.Time {
 	return time.Now().UTC().AddDate(0, 0, -30)
 }
 
+// 7/30 change
+// getKline will now support fetching kline on "since" or "limit"
 func (s *Server) getKline(c *gin.Context) {
 	symbol := c.Param("symbol")
 	interval := c.DefaultQuery("interval", "1m")
 	since := parseSince(c)
 
-	klines, err := s.store.GetKline(c.Request.Context(), symbol, interval, since)
+	if limitStr := c.Query("limit"); limitStr != "" {
+		// if limit is given in query, we fetch kline by "limit"
+		limit, _ := strconv.Atoi(limitStr)
+
+		if limit <= 0 || limit > 1000 {
+			limit = 100
+		}
+		klines, err := s.store.GetKlineLimit(c, symbol, interval, limit)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, klines)
+		return
+	}
+	// if limit not given, fetch by "since"
+	klines, err := s.store.GetKline(c, symbol, interval, since)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

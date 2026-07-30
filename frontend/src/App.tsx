@@ -96,7 +96,7 @@ export default function App() {
           <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Recent Trades (binance.us)</h2>
           <TradeTable trades={trades} />
           <br></br>
-          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Indicators</h2>
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Indicators ({inter} candles)</h2>
           <IndicatorPanel indicators={indicator} /> 
         </section>
 
