@@ -11,8 +11,9 @@ VALID_PROVIDERS=("anthropic", "openai", "local")
 class Settings:
     provider: str
     model: str
-    llm_base_url: str | None 
+    llm_base_url: str | None
     llm_api_key: str | None
+    max_tokens: int
 
 
 def load_settings() -> Settings:
@@ -47,9 +48,18 @@ def load_settings() -> Settings:
     if provider in ("anthropic", "openai") and not llm_api_key:
         raise RuntimeError(f"LLM_PROVIDER={provider} requires LLM_API_KEY")
 
+    # never inherit the server's own default: mlx_lm.server caps at 512, which a
+    # thinking model spends entirely inside <think> before writing a single word
+    raw_max_tokens = os.getenv("LLM_MAX_TOKENS", "8192")
+    try:
+        max_tokens = int(raw_max_tokens)
+    except ValueError:
+        raise RuntimeError(f"LLM_MAX_TOKENS={raw_max_tokens} is not an integer") from None
+
     return Settings(
         provider=provider,
         model=model,
         llm_base_url=llm_base_url,
         llm_api_key=llm_api_key,
+        max_tokens=max_tokens,
     )

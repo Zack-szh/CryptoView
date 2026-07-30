@@ -19,6 +19,7 @@ def build_llm(settings: Settings) -> BaseChatModel:
         return ChatAnthropic(
             model_name=settings.model,
             api_key=SecretStr(settings.llm_api_key or ""),
+            max_tokens=settings.max_tokens,
             timeout=None,
             stop=None,
         )
@@ -29,6 +30,7 @@ def build_llm(settings: Settings) -> BaseChatModel:
         model=settings.model,
         api_key=SecretStr(settings.llm_api_key or "not-needed"),  # local servers ignore it
         base_url=settings.llm_base_url,  # None → api.openai.com
+        max_tokens=settings.max_tokens,
         timeout=None,
     )
 
@@ -70,8 +72,13 @@ if __name__ == "__main__":
     )
 
     llm = build_llm(settings)
-    reply = llm.invoke("Reply with exactly one word: pong")
-    print("reply:", reply.content)
+
+
+    reply = llm.invoke("Introduce yourself")
+    print("content:  ", repr(reply.content))
+    print("finish:   ", reply.response_metadata.get("finish_reason"))
+    print("extra:    ", reply.additional_kwargs)
+    print("usage:    ", reply.usage_metadata)
 
     assert_supports_tool_calling(llm, settings.model)
     print("tools:  OK — model emitted a tool call")
