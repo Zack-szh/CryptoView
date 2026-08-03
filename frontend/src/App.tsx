@@ -8,6 +8,7 @@ import KlineChart from './components/KlineChart'
 import OrderBookTable from './components/OrderBookTable'
 import OrderBookDepth from './components/OrderBookDepth'
 import IndicatorPanel from './components/IndicatorPanel'
+import AgentChat from './components/AgentChat'
 
 export default function App() {
   const [symbols, setSymbols] = useState<string[]>([])
@@ -113,6 +114,11 @@ export default function App() {
         <section className="bg-gray-900 rounded-xl p-5">
           <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Order Book (DEPTH)</h2>
           <OrderBookDepth book={orderBook} />
+        </section>
+
+        <section className="bg-gray-900 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Agent</h2>
+          <AgentChat />
         </section>
 
       </div>

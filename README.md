@@ -17,3 +17,5 @@ Useful commands:
 - launch frontend on http://localhost:3000/: 
     cd frontend
     npm run dev
+
+- launch agent server on http://localhost:8000:
