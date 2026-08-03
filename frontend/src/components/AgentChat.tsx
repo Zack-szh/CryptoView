@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { askAgent } from '../api/client'
 import type { AgentToolCall } from '../api/types'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface Turn {
   question: string
@@ -106,7 +108,13 @@ export default function AgentChat() {
 
             {turn.answer && (
               <div className="rounded-lg bg-gray-800 px-3 py-2">
-                <p className="whitespace-pre-wrap text-sm text-gray-200">{turn.answer}</p>
+                <div className="prose prose-invert prose-sm max-w-none
+                                prose-p:my-2 prose-ul:my-2 prose-li:my-0.5
+                                prose-headings:mt-3 prose-headings:mb-1
+                                prose-strong:text-white
+                                prose-code:text-blue-300 prose-code:before:content-none prose-code:after:content-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{turn.answer}</ReactMarkdown>
+                </div>
                 <ToolCalls calls={turn.toolCalls ?? []} />
               </div>
             )}

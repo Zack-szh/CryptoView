@@ -19,3 +19,4 @@ Useful commands:
     npm run dev
 
 - launch agent server on http://localhost:8000:
+    cd ./services/ml && uv run uvicorn cryptoview_ml.server:app --port 8000 --reload

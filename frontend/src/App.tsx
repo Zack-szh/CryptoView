@@ -106,11 +106,6 @@ export default function App() {
           <KlineChart klines={klines} interval={inter} onIntervalChange={setInter} series={indicatorSeries} />
         </section>
 
-         <section className="bg-gray-900 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Order Book (RAW)</h2>
-          <OrderBookTable book={orderBook} />
-        </section>
-
         <section className="bg-gray-900 rounded-xl p-5">
           <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Order Book (DEPTH)</h2>
           <OrderBookDepth book={orderBook} />
