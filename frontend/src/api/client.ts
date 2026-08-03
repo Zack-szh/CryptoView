@@ -1,4 +1,4 @@
-import type {Ticker, Trade, Kline, OrderBook, Indicator, IndicatorSeries} from './types'
+import type {Ticker, Trade, Kline, OrderBook, Indicator, IndicatorSeries, AgentReply, AgentToolCall} from './types'
 
 const BASE = '/api/v1'
 
@@ -43,4 +43,14 @@ export async function fetchIndicatorSeries(symbol: string, interval = "1m"): Pro
     const res = await fetch(`${BASE}/indicator/${symbol}/series?interval=${interval}`)
     if (!res.ok) throw new Error("Failed to fetch indicator series")
     return res.json()
+}
+
+export async function askAgent(question: string): Promise<AgentReply> {
+    const res = await fetch('/agent/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ question }),
+    })
+  if (!res.ok) throw new Error(`agent returned ${res.status}`)
+  return res.json()
 }

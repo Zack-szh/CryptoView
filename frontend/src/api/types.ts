@@ -93,3 +93,14 @@ export interface IndicatorSeries {
 
   rsi_14: (number | null)[]
 }
+
+export interface AgentToolCall {
+  name:string
+  args: Record<string, unknown>
+  result: string
+}
+
+export interface AgentReply {
+  answer: string
+  tool_calls: AgentToolCall[]
+}

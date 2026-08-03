@@ -71,7 +71,7 @@ async def ask(agent, question: str) -> list:
 async def main():
     # here SOLANA is not in our testing database
     # agent should call get_symbols first to check whether data exists
-    question = "What is SOLANA doing right now?"
+    question = "What is BTC doing right now? give me a trend prediction on 5m interval"
 
     settings = load_settings() 
     agent = build_agent(settings)
