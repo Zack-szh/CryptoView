@@ -79,6 +79,7 @@ if __name__ == "__main__":
     print("finish:   ", reply.response_metadata.get("finish_reason"))
     print("extra:    ", reply.additional_kwargs)
     print("usage:    ", reply.usage_metadata)
+    print("tool call:", reply.tool_calls)
 
     assert_supports_tool_calling(llm, settings.model)
     print("tools:  OK — model emitted a tool call")
