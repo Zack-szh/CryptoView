@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from langchain_core.messages import AIMessage, ToolMessage
 from pydantic import BaseModel
 
-from .agent import build_agent, extract_text
+from .agent import build_agent, extract_text, agent_session, latest_turn
 from .config import load_settings
 
 # agent is built once on startup
@@ -16,16 +16,25 @@ _agent = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _agent
-    settings = load_settings()
-    print(f"building agent: provider={settings.provider} model={settings.model}")
-    _agent = build_agent(settings)
-    yield
+    settings = load_settings() 
 
+    print(f"building agent: provider: {settings.provider}, model={settings.model}")
+
+    # agent_session is an async context manager, it owns the database connection 
+    # for checkpointer, therefore we need to keep agent_session() alive while we serve requests
+    async with agent_session(settings) as agent:
+        _agent = agent
+        print("agent is ready - conversation history persisted to postgres") 
+        yield 
+
+    # cleanup 
+    _agent = None
 
 app = FastAPI(lifespan=lifespan)
 
 class ChatRequest(BaseModel):
     question: str 
+    session_id: str
 
 class ToolCall(BaseModel):
     name: str
@@ -69,14 +78,17 @@ async def chat(req: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=503, detail="Agent not ready")
 
     try: 
-        result = await _agent.ainvoke({"messages": [{"role": "user", "content": req.question}]})
+        result = await _agent.ainvoke({"messages": [{"role": "user", "content": req.question}]}, 
+                                      config={"configurable": {"thread_id": req.session_id}})
     except Exception as e:
         raise HTTPException(status_code=502, detail="Failed to invoke agent {e}") from e
 
     messages = result["messages"]
     return ChatResponse(
         answer=extract_text(messages[-1]), 
-        tool_calls=collect_tool_calls(messages)
+        # note that messages is now the entire thread, with checkpointer 
+        # therefore we only return tool calls for the lastest turn
+        tool_calls=collect_tool_calls(latest_turn(messages))
     )
 
     

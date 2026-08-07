@@ -20,3 +20,6 @@ Useful commands:
 
 - launch agent server on http://localhost:8000:
     cd ./services/ml && uv run uvicorn cryptoview_ml.server:app --port 8000 --reload
+
+- serve local model on http://localhost:8081
+    mlx_lm.server --port 8081 --model Qwen3.6-35B-A3B-MLX-4bit

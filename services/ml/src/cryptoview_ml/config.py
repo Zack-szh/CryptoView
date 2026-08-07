@@ -14,6 +14,8 @@ class Settings:
     llm_base_url: str | None
     llm_api_key: str | None
     max_tokens: int
+    # 8/7/2026L Database_url added, for persisitng langgraph checkpoints
+    database_url: str
 
 
 def load_settings() -> Settings:
@@ -56,10 +58,15 @@ def load_settings() -> Settings:
     except ValueError:
         raise RuntimeError(f"LLM_MAX_TOKENS={raw_max_tokens} is not an integer") from None
 
+    database_url = os.getenv("DATABASE_URL", "")
+    if database_url == "": 
+        raise RuntimeError("invalid env DATABASE_URL")
+
     return Settings(
         provider=provider,
         model=model,
         llm_base_url=llm_base_url,
         llm_api_key=llm_api_key,
         max_tokens=max_tokens,
+        database_url=database_url,
     )

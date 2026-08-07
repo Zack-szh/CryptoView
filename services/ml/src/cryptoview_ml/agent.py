@@ -1,9 +1,14 @@
 import asyncio
 import re
 import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from uuid import uuid4
 
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
 from langchain.agents import create_agent
+from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 from .config import Settings, load_settings
 from .llm import assert_supports_tool_calling, build_llm
@@ -15,13 +20,36 @@ SYSTEM_PROMPT = "You are a crypto market analyst for the service CryptoView. " \
 # extract content from think block, using regular expression pattern
 THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL)
 
-def build_agent(settings: Settings):
+def build_agent(settings: Settings, checkpointer: BaseCheckpointSaver):
     """ 
-    Creates a ReAct loop and tools
+    Creates a ReAct loop and tools, along with AsyncPostgres checkpointer
     """
     llm = build_llm(settings)
     assert_supports_tool_calling(llm, settings.model)
-    return create_agent(llm, ALL_TOOLS, system_prompt=SYSTEM_PROMPT)
+    return create_agent(
+        llm, 
+        ALL_TOOLS,
+        system_prompt=SYSTEM_PROMPT,
+        checkpointer=checkpointer
+    )
+
+
+@asynccontextmanager
+async def agent_session(settings: Settings) -> AsyncIterator: 
+    """ 
+    An agent backed by conversation history in postgres
+
+    The saver owns a live connection to our postgres database, therefore we can't 
+    simply return the agent and close this connection, that would mean the checkpointer 
+    would point at nothing. Need to yield instead of return
+    """
+
+    async with AsyncPostgresSaver.from_conn_string(settings.database_url) as checkpointer:
+        # creates checkpoint table if not exist, this is idempotent and runs every reboot
+        # note that the saver owns the table, not in infra/migrations
+        await checkpointer.setup() 
+        yield build_agent(settings, checkpointer)
+
 
 
 def extract_text(message) -> str:
@@ -60,26 +88,53 @@ def print_trace(messages) -> None:
             print(f"  <- {m.name}: {preview}")
 
 
-async def ask(agent, question: str) -> list:
+def latest_turn(messages: list) -> list: 
+    """ 
+    with checkpointer implemented, now messages includes all messages in a thread
+    this function returns all messages starting from the last human message
+    AKA: function returns all messages after the last user request
+    """
+    for i in range(len(messages)-1, -1, -1):
+        if isinstance(messages[i], HumanMessage): 
+            return messages[i:]
+    return messages
+
+async def ask(agent, question: str, thread_id: str | None = None) -> list:
     """ 
     Note that we are using ainvoke, everything in tools should be async
+
+    thread_id is the key for checkpointer, same id means same conversation, new id 
+    means new checkpoint, no id means stateless agent
     """
-    result = await agent.ainvoke({"messages": [{"role": "user", "content": question}]})
+
+    config = {"configurable": {"thread_id": thread_id}} if thread_id else None
+    result = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": question}]},
+        config=config,
+    )
     return result["messages"]
 
 
 async def main():
-    # here SOLANA is not in our testing database
-    # agent should call get_symbols first to check whether data exists
-    question = "What is BTC doing right now? give me a trend prediction on 5m interval"
+    # the second question is the actual test: "what about ETH" is answerable 
+    # if checkpoint works properly
 
-    settings = load_settings() 
-    agent = build_agent(settings)
-    print(f"Question: {question}\n")
-    messages = await ask(agent, question)
+    questions = [
+        "What is BTC doing right now? You should analyze its momentum on the 5m chart.",
+        "What about ETH? Same criteria as BTC.",
+    ]
 
-    print_trace(messages=messages)
-    print(f"Content: {extract_text(messages[-1])}")
+    settings = load_settings()
+    thread_id = f"cli-{uuid4()}"
+
+    async with agent_session(settings) as agent:
+        print(f"thread: {thread_id}\n")
+        for question in questions:
+            print(f"Question: {question}")
+            messages = await ask(agent, question, thread_id)
+            print_trace(latest_turn(messages))
+            print(f"Content: {extract_text(messages[-1])}\n")
+    
 
 if __name__ == "__main__":
    asyncio.run(main())
