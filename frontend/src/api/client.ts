@@ -45,11 +45,11 @@ export async function fetchIndicatorSeries(symbol: string, interval = "1m"): Pro
     return res.json()
 }
 
-export async function askAgent(question: string): Promise<AgentReply> {
+export async function askAgent(question: string, sessionId: string): Promise<AgentReply> {
     const res = await fetch('/agent/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, session_id: sessionId }),
     })
   if (!res.ok) throw new Error(`agent returned ${res.status}`)
   return res.json()

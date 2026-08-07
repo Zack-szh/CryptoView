@@ -51,11 +51,22 @@ export default function AgentChat() {
   const [input, setInput] = useState('')
   const [turns, setTurns] = useState<Turn[]>([])
   const [busy, setBusy] = useState(false)
+  // the agent's checkpointer loads history by sessionId
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
   const bottom = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: 'smooth' })
   }, [turns, busy])
+
+  // a new id IS the reset — the old thread stays in postgres, orphaned and unreachable
+  function newChat() {
+    if (busy) return
+    setSessionId(crypto.randomUUID())
+    setTurns([])
+    setInput('')
+  }
+
 
   async function send(question: string) {
     if (!question || busy) return
@@ -69,7 +80,7 @@ export default function AgentChat() {
       setTurns((t) => t.map((turn, i) => (i === t.length - 1 ? { ...turn, ...fields } : turn)))
 
     try {
-      const reply = await askAgent(question)
+      const reply = await askAgent(question, sessionId)
       patch({ answer: reply.answer, toolCalls: reply.tool_calls })
     } catch (err) {
       patch({ error: err instanceof Error ? err.message : String(err) })
@@ -80,6 +91,17 @@ export default function AgentChat() {
 
   return (
     <div className="flex h-[32rem] flex-col">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="font-mono text-xs text-gray-600">session {sessionId}</span>
+        <button
+          onClick={newChat}
+          disabled={busy || turns.length === 0}
+          className="rounded px-2 py-1 text-xs text-white-500 hover:bg-white-800 hover:text-white-300 disabled:opacity-30 disabled:hover:bg-transparent"
+        >
+          New chat
+        </button>
+      </div>
+
       <div className="flex-1 space-y-4 overflow-y-auto pr-1">
         {turns.length === 0 && (
           <div className="space-y-2">
