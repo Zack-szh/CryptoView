@@ -1,9 +1,10 @@
 # CryptoView
 
-Real-time cryptocurrency market data platform. Streams live trades, tickers, and klines from Binance into PostgreSQL, serves them over a REST API, computes technical indicators on the fly, and surfaces everything through a React dashboard with an LLM-powered analyst agent on top.
+Real-time cryptocurrency market data platform. Streams live trades, tickers, and klines from Binance.us into PostgreSQL, serves them over a REST API, computes technical indicators on the fly, and surfaces everything through a React dashboard with an LLM-powered analyst agent on top.
 
-<!-- SCREENSHOT: insert a screenshot of the dashboard here -->
-<!-- ![CryptoView dashboard](./docs/screenshot.png) -->
+
+![alt text](image.png)
+![alt text](image.png)
 
 ## Features
 
@@ -161,12 +162,8 @@ docker exec -it cryptoview-postgres-1 psql -U cryptoview -d cryptoview
 mlx_lm.server --port 8081 --model <model-path>
 ```
 
-## Roadmap
 
-- Trained prediction model behind the agent's `predict` tool (currently a stub)
-- Streaming responses from the agent
-- Data retention / partitioning policy for high-frequency tables
 
 ## License
 
-No license has been chosen yet. All rights reserved by default.
+TBD
