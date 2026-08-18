@@ -168,4 +168,6 @@ mlx_lm.server --port 8081 --model <model-path>
 
 ## License
 
-TBD
+MIT License
+
+Copyright (c) 2026 Zack Sun
