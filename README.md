@@ -13,6 +13,7 @@ Real-time cryptocurrency market data platform. Streams live trades, tickers, and
 - **Technical indicators** — SMA, EMA, RSI, MACD, Bollinger Bands, VWAP, and realized volatility, available as a snapshot or a full historical series
 - **Interactive dashboard** — React + TypeScript + Vite frontend with a live candlestick chart, order book, trade tape, and ticker panel
 - **LLM analyst agent** — LangChain/LangGraph agent (Anthropic, OpenAI, or any local OpenAI-compatible endpoint) that answers questions about the market using only live tool-sourced data, with conversation history persisted per session in Postgres
+![Agent Session](p3.png)
 
 ## Architecture
 
