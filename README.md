@@ -3,8 +3,8 @@
 Real-time cryptocurrency market data platform. Streams live trades, tickers, and klines from Binance.us into PostgreSQL, serves them over a REST API, computes technical indicators on the fly, and surfaces everything through a React dashboard with an LLM-powered analyst agent on top.
 
 
-![Dashboard](p1.png)
-![Orderbook & Agent](p2.png)
+![Demo](tour.gif)
+
 
 ## Features
 
@@ -13,7 +13,6 @@ Real-time cryptocurrency market data platform. Streams live trades, tickers, and
 - **Technical indicators** — SMA, EMA, RSI, MACD, Bollinger Bands, VWAP, and realized volatility, available as a snapshot or a full historical series
 - **Interactive dashboard** — React + TypeScript + Vite frontend with a live candlestick chart, order book, trade tape, and ticker panel
 - **LLM analyst agent** — LangChain/LangGraph agent (Anthropic, OpenAI, or any local OpenAI-compatible endpoint) that answers questions about the market using only live tool-sourced data, with conversation history persisted per session in Postgres. Every single tool call is logged and retraceable within the agent interface. 
-![Agent Session](p3.png)
 ![Agent Tool Calling](p4.png)
 
 ## Architecture
