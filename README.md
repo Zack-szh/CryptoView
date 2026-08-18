@@ -30,7 +30,7 @@ market-data service (Go)  ──stream + backfill──▶  PostgreSQL
                                         ▲          ▲
                                         │          │
                           Vite dev server         ml agent service (FastAPI)
-                          :3000  (browser)  :8000  /agent/chat
+                          :3000  (browser)        :8000  /agent/chat
                                         │                │
                                         │                ├──▶ Go API (tool calls)
                                         │                └──▶ LLM provider (Anthropic / OpenAI / local)
