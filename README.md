@@ -3,8 +3,8 @@
 Real-time cryptocurrency market data platform. Streams live trades, tickers, and klines from Binance.us into PostgreSQL, serves them over a REST API, computes technical indicators on the fly, and surfaces everything through a React dashboard with an LLM-powered analyst agent on top.
 
 
-![alt text](image.png)
-![alt text](image.png)
+![Dashboard](p1.png)
+![Orderbook & Agent](p2.png)
 
 ## Features
 
